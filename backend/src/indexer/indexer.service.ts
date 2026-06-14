@@ -1,8 +1,10 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { SorobanRpc } from '@stellar/stellar-sdk';
 import {
   IndexedIdentity,
@@ -18,6 +20,8 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
   private isIndexing = false;
   private lastLedgerSequence: number = 0;
 
+  private static readonly LEDGER_CACHE_KEY = 'indexer:last_ledger_sequence';
+
   constructor(
     @InjectRepository(IndexedIdentity)
     private identityRepository: Repository<IndexedIdentity>,
@@ -28,6 +32,7 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
     @InjectRepository(IndexedDataSharing)
     private dataSharingRepository: Repository<IndexedDataSharing>,
     private configService: ConfigService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async onModuleInit() {
@@ -383,25 +388,36 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
 
   private async getLastIndexedLedger(): Promise<number> {
     try {
-      // Get the highest ledger sequence from any indexed table
+      const cached = await this.cacheManager.get<number>(
+        IndexerService.LEDGER_CACHE_KEY,
+      );
+      if (cached !== undefined && cached !== null) {
+        return cached;
+      }
+
+      // Fall back to highest ledger in DB on first boot (cold start)
       const [identity] = await this.identityRepository.find({
         order: { ledgerSequence: 'DESC' },
         take: 1,
       });
-
-      if (identity) {
-        return identity.ledgerSequence;
-      }
+      return identity?.ledgerSequence ?? 0;
     } catch (error) {
       this.logger.error('Error getting last indexed ledger:', error);
+      return 0;
     }
-    return 0;
   }
 
-  private async saveLastIndexedLedger(ledgerSequence: number) {
-    // In a production environment, you might want to store this in a separate table
-    // or Redis for faster access
-    this.logger.log(`Saved last indexed ledger: ${ledgerSequence}`);
+  private async saveLastIndexedLedger(ledgerSequence: number): Promise<void> {
+    try {
+      await this.cacheManager.set(
+        IndexerService.LEDGER_CACHE_KEY,
+        ledgerSequence,
+        0, // no TTL — persists until evicted or restarted
+      );
+      this.logger.debug(`Checkpointed last ledger: ${ledgerSequence}`);
+    } catch (error) {
+      this.logger.error('Failed to checkpoint ledger sequence in Redis:', error);
+    }
   }
 
   // Query methods for the indexed data
