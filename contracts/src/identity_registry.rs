@@ -29,7 +29,7 @@ impl IdentityRegistry {
         let identity_id = env
             .storage()
             .instance()
-            .get::<_, u64>(&(&owner, &document_hash))
+            .get::<_, u64>(&(owner.clone(), document_hash.clone()))
             .unwrap_or(0u64)
             + 1;
 
@@ -44,7 +44,7 @@ impl IdentityRegistry {
 
         env.storage()
             .instance()
-            .set(&(&owner, &document_hash), &identity_id);
+            .set(&(owner.clone(), document_hash.clone()), &identity_id);
         env.storage()
             .instance()
             .set(&(identity_id, "identity"), &identity);
