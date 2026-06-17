@@ -180,4 +180,22 @@ impl IdentityRegistry {
     pub fn get_upgrade_admin(env: &Env) -> Option<Address> {
         upgrade::get_admin(env)
     }
+
+    /// Transfer the upgrade admin role to `new_admin`.
+    /// Both `current_admin` and `new_admin` must authorise this call,
+    /// preventing accidental lock-out.
+    pub fn transfer_upgrade_admin(env: &Env, current_admin: Address, new_admin: Address) {
+        upgrade::transfer_admin(env, &current_admin, &new_admin);
+    }
+
+    /// Return the default credential TTL (seconds) written by `migrate_v1_to_v2`,
+    /// or `None` if the migration has not yet run.
+    pub fn get_credential_ttl(env: &Env) -> Option<u64> {
+        upgrade::get_credential_ttl(env)
+    }
+
+    /// Return `true` once `migrate_v1_to_v2` has completed successfully.
+    pub fn is_migration_complete(env: &Env) -> bool {
+        upgrade::is_migrated_v2(env)
+    }
 }
