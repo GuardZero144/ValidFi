@@ -5,6 +5,9 @@ use crate::errors::Error;
 const ADMIN_KEY: &str = "upg_admin";
 const VERSION_KEY: &str = "upg_ver";
 const MIGRATED_V2_KEY: &str = "migrated_v2";
+const CRED_TTL_KEY: &str = "cred_ttl";
+
+pub const DEFAULT_CRED_TTL_SECONDS: u64 = 2_592_000; // 30 days
 
 pub const INITIAL_VERSION: u32 = 1;
 
@@ -48,8 +51,9 @@ pub fn run_migration_v2(env: &Env) {
     if env.storage().instance().has(&MIGRATED_V2_KEY) {
         panic_with_error!(env, Error::AlreadyInitialized);
     }
-    // New v2 global: default credential time-to-live in seconds
-    env.storage().instance().set(&"cred_ttl", &2_592_000u64);
+    env.storage()
+        .instance()
+        .set(&CRED_TTL_KEY, &DEFAULT_CRED_TTL_SECONDS);
     env.storage().instance().set(&MIGRATED_V2_KEY, &true);
 }
 
@@ -66,4 +70,18 @@ pub fn get_admin(env: &Env) -> Option<Address> {
 
 pub fn is_migrated_v2(env: &Env) -> bool {
     env.storage().instance().has(&MIGRATED_V2_KEY)
+}
+
+/// Transfer upgrade admin to `new_admin`. Both parties must authorise.
+/// Prevents accidentally locking out the contract by requiring the new
+/// admin to co-sign.
+pub fn transfer_admin(env: &Env, current_admin: &Address, new_admin: &Address) {
+    require_admin(env, current_admin);
+    new_admin.require_auth();
+    env.storage().instance().set(&ADMIN_KEY, new_admin);
+}
+
+/// Return the default credential TTL set by the v2 migration, if run.
+pub fn get_credential_ttl(env: &Env) -> Option<u64> {
+    env.storage().instance().get(&CRED_TTL_KEY)
 }

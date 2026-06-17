@@ -121,6 +121,92 @@ fn test_migrate_panics_before_admin_initialized() {
     client.migrate_v1_to_v2(&admin);
 }
 
+// ── transfer_upgrade_admin ───────────────────────────────────────────────────
+
+#[test]
+fn test_transfer_admin_updates_admin() {
+    let (env, client, admin) = setup();
+    let new_admin = Address::generate(&env);
+    client.initialize_admin(&admin);
+    client.transfer_upgrade_admin(&admin, &new_admin);
+    assert_eq!(client.get_upgrade_admin(), Some(new_admin));
+}
+
+#[test]
+fn test_new_admin_can_migrate_after_transfer() {
+    let (env, client, admin) = setup();
+    let new_admin = Address::generate(&env);
+    client.initialize_admin(&admin);
+    client.transfer_upgrade_admin(&admin, &new_admin);
+    // new admin should be able to trigger migration without panic
+    client.migrate_v1_to_v2(&new_admin);
+    assert!(client.is_migration_complete());
+}
+
+#[test]
+#[should_panic]
+fn test_old_admin_cannot_migrate_after_transfer() {
+    let (env, client, admin) = setup();
+    let new_admin = Address::generate(&env);
+    client.initialize_admin(&admin);
+    client.transfer_upgrade_admin(&admin, &new_admin);
+    // old admin is no longer authorised
+    client.migrate_v1_to_v2(&admin);
+}
+
+#[test]
+#[should_panic]
+fn test_transfer_admin_non_admin_panics() {
+    let (env, client, admin) = setup();
+    let attacker = Address::generate(&env);
+    let new_admin = Address::generate(&env);
+    client.initialize_admin(&admin);
+    client.transfer_upgrade_admin(&attacker, &new_admin);
+}
+
+#[test]
+#[should_panic]
+fn test_transfer_admin_before_init_panics() {
+    let (env, client, _) = setup();
+    let a = Address::generate(&env);
+    let b = Address::generate(&env);
+    client.transfer_upgrade_admin(&a, &b);
+}
+
+// ── get_credential_ttl ───────────────────────────────────────────────────────
+
+#[test]
+fn test_get_credential_ttl_none_before_migration() {
+    let (_, client, admin) = setup();
+    client.initialize_admin(&admin);
+    assert_eq!(client.get_credential_ttl(), None);
+}
+
+#[test]
+fn test_get_credential_ttl_set_after_migration() {
+    let (_, client, admin) = setup();
+    client.initialize_admin(&admin);
+    client.migrate_v1_to_v2(&admin);
+    assert_eq!(client.get_credential_ttl(), Some(2_592_000u64));
+}
+
+// ── is_migration_complete ────────────────────────────────────────────────────
+
+#[test]
+fn test_is_migration_complete_false_before_migration() {
+    let (_, client, admin) = setup();
+    client.initialize_admin(&admin);
+    assert!(!client.is_migration_complete());
+}
+
+#[test]
+fn test_is_migration_complete_true_after_migration() {
+    let (_, client, admin) = setup();
+    client.initialize_admin(&admin);
+    client.migrate_v1_to_v2(&admin);
+    assert!(client.is_migration_complete());
+}
+
 // ── upgrade + identity data coexistence ──────────────────────────────────────
 
 #[test]
