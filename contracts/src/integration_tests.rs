@@ -280,7 +280,7 @@ fn test_revocation_status_updates() {
 
     let (revoked, revoked_at, reason) = verification.get_revocation_status(&v_id);
     assert!(revoked);
-    assert!(revoked_at >= 0); // May be 0 in test environment
+    let _ = revoked_at; // Timestamp is set but may be 0 in test environment
     assert_eq!(reason, revoke_reason);
 }
 
