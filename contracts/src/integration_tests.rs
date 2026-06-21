@@ -228,6 +228,189 @@ fn test_get_verification_by_identity() {
     assert_eq!(found_id, v_id);
 }
 
+// ── Credential Revocation Tests ──────────────────────────────────────────────
+
+#[test]
+fn test_revoke_verification_credential() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmRevoke"));
+
+    let proof_hash = BytesN::from_array(&env, &[42u8; 32]);
+    let commitment = BytesN::from_array(&env, &[99u8; 32]);
+    let v_id = verification.submit_proof(&identity_id, &verifier, &proof_hash, &commitment);
+
+    verification.approve_verification(&v_id);
+
+    assert!(!verification.is_verification_revoked(&v_id));
+
+    let reason = String::from_str(&env, "credential_compromised");
+    verification.revoke_verification(&v_id, &reason);
+
+    assert!(verification.is_verification_revoked(&v_id));
+}
+
+#[test]
+fn test_revocation_status_updates() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmStatus"));
+
+    let proof_hash = BytesN::from_array(&env, &[42u8; 32]);
+    let commitment = BytesN::from_array(&env, &[99u8; 32]);
+    let v_id = verification.submit_proof(&identity_id, &verifier, &proof_hash, &commitment);
+
+    verification.approve_verification(&v_id);
+
+    let (revoked, revoked_at, reason) = verification.get_revocation_status(&v_id);
+    assert!(!revoked);
+    assert_eq!(revoked_at, 0);
+    assert_eq!(reason, String::from_str(&env, ""));
+
+    let revoke_reason = String::from_str(&env, "security_breach");
+    verification.revoke_verification(&v_id, &revoke_reason);
+
+    let (revoked, revoked_at, reason) = verification.get_revocation_status(&v_id);
+    assert!(revoked);
+    let _ = revoked_at; // Timestamp is set but may be 0 in test environment
+    assert_eq!(reason, revoke_reason);
+}
+
+#[test]
+fn test_revocation_list_maintenance() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmList"));
+
+    // Create multiple verifications
+    let v_id1 = verification.submit_proof(
+        &identity_id,
+        &verifier,
+        &BytesN::from_array(&env, &[1u8; 32]),
+        &BytesN::from_array(&env, &[10u8; 32]),
+    );
+    let v_id2 = verification.submit_proof(
+        &identity_id,
+        &verifier,
+        &BytesN::from_array(&env, &[2u8; 32]),
+        &BytesN::from_array(&env, &[20u8; 32]),
+    );
+
+    let revoked_list = verification.get_revoked_verifications();
+    assert_eq!(revoked_list.len(), 0);
+
+    verification.revoke_verification(&v_id1, &String::from_str(&env, "reason1"));
+    let revoked_list = verification.get_revoked_verifications();
+    assert_eq!(revoked_list.len(), 1);
+    assert_eq!(revoked_list.get(0).unwrap(), v_id1);
+
+    verification.revoke_verification(&v_id2, &String::from_str(&env, "reason2"));
+    let revoked_list = verification.get_revoked_verifications();
+    assert_eq!(revoked_list.len(), 2);
+    assert_eq!(revoked_list.get(0).unwrap(), v_id1);
+    assert_eq!(revoked_list.get(1).unwrap(), v_id2);
+}
+
+#[test]
+fn test_is_verification_valid() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmValid"));
+
+    let proof_hash = BytesN::from_array(&env, &[42u8; 32]);
+    let commitment = BytesN::from_array(&env, &[99u8; 32]);
+    let v_id = verification.submit_proof(&identity_id, &verifier, &proof_hash, &commitment);
+
+    // Pending verification is not valid
+    assert!(!verification.is_verification_valid(&v_id));
+
+    verification.approve_verification(&v_id);
+
+    // Approved verification is valid
+    assert!(verification.is_verification_valid(&v_id));
+
+    verification.revoke_verification(&v_id, &String::from_str(&env, "test_reason"));
+
+    // Revoked verification is not valid
+    assert!(!verification.is_verification_valid(&v_id));
+}
+
+#[test]
+fn test_revoke_rejected_verification() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmRejRev"));
+
+    let proof_hash = BytesN::from_array(&env, &[42u8; 32]);
+    let commitment = BytesN::from_array(&env, &[99u8; 32]);
+    let v_id = verification.submit_proof(&identity_id, &verifier, &proof_hash, &commitment);
+
+    verification.reject_verification(&v_id, &String::from_str(&env, "invalid_proof"));
+
+    // Can still revoke even if rejected
+    verification.revoke_verification(&v_id, &String::from_str(&env, "fraudulent"));
+
+    assert!(verification.is_verification_revoked(&v_id));
+    assert!(!verification.is_verification_valid(&v_id));
+}
+
+#[test]
+fn test_multiple_verifications_independent_revocation() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier1 = Address::generate(&env);
+    let verifier2 = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmMulti"));
+
+    let v_id1 = verification.submit_proof(
+        &identity_id,
+        &verifier1,
+        &BytesN::from_array(&env, &[1u8; 32]),
+        &BytesN::from_array(&env, &[10u8; 32]),
+    );
+    let v_id2 = verification.submit_proof(
+        &identity_id,
+        &verifier2,
+        &BytesN::from_array(&env, &[2u8; 32]),
+        &BytesN::from_array(&env, &[20u8; 32]),
+    );
+
+    verification.approve_verification(&v_id1);
+    verification.approve_verification(&v_id2);
+
+    // Revoke first verification
+    verification.revoke_verification(&v_id1, &String::from_str(&env, "reason1"));
+
+    // First is revoked, second is still valid
+    assert!(verification.is_verification_revoked(&v_id1));
+    assert!(!verification.is_verification_revoked(&v_id2));
+    assert!(!verification.is_verification_valid(&v_id1));
+    assert!(verification.is_verification_valid(&v_id2));
+}
+
 // ── Access Control Integration ────────────────────────────────────────────────
 
 #[test]
@@ -554,6 +737,35 @@ fn test_get_verification_by_nonexistent_identity_panics() {
 fn test_get_verification_status_nonexistent_panics() {
     let (_, _, verification, _, _, _) = setup();
     verification.get_verification_status(&999);
+}
+
+#[test]
+#[should_panic]
+fn test_revoke_nonexistent_verification_panics() {
+    let (env, _, verification, _, _, _) = setup();
+    let reason = String::from_str(&env, "test");
+    verification.revoke_verification(&999, &reason);
+}
+
+#[test]
+#[should_panic]
+fn test_is_verification_revoked_nonexistent_panics() {
+    let (_, _, verification, _, _, _) = setup();
+    verification.is_verification_revoked(&999);
+}
+
+#[test]
+#[should_panic]
+fn test_get_revocation_status_nonexistent_panics() {
+    let (_, _, verification, _, _, _) = setup();
+    verification.get_revocation_status(&999);
+}
+
+#[test]
+#[should_panic]
+fn test_is_verification_valid_nonexistent_panics() {
+    let (_, _, verification, _, _, _) = setup();
+    verification.is_verification_valid(&999);
 }
 
 #[test]
