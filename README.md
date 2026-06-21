@@ -117,6 +117,9 @@ A decentralized health credential platform built on the Stellar Soroban Smart Co
 - **Platform**: Stellar Soroban
 - **Build Tool**: Cargo
 - **Testing**: Soroban SDK
+- **Performance**: Budget/gas, execution-time and load benchmarks for the
+  credential contract — see [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md). Run with
+  `cargo test --features testutils benchmarks -- --nocapture`.
 
 ### DevOps
 - **Version Control**: Git

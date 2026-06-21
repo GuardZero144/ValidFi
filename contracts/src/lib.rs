@@ -13,6 +13,9 @@ mod upgrade_tests;
 #[cfg(test)]
 mod integration_tests;
 
+#[cfg(test)]
+mod benchmarks;
+
 pub use access_control::AccessControl;
 pub use data_sharing::DataSharing;
 pub use errors::Error;
