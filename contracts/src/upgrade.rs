@@ -128,7 +128,7 @@ fn set_implementation(env: &Env, implementation: &BytesN<32>) {
 
 /// Replace the running WASM and increment the stored version (legacy method).
 /// `require_admin` must be called before this.
-pub fn execute_upgrade_legacy(env: &Env, new_wasm_hash: BytesN<32>) {
+pub fn execute_upgrade_legacy(env: &Env, _new_wasm_hash: BytesN<32>) {
     let version: u32 = env
         .storage()
         .instance()
@@ -137,7 +137,7 @@ pub fn execute_upgrade_legacy(env: &Env, new_wasm_hash: BytesN<32>) {
     // Note: In production, this would deploy the actual WASM
     // For testing, we skip the actual deployment and just update the version
     #[cfg(not(test))]
-    env.deployer().update_current_contract_wasm(new_wasm_hash);
+    env.deployer().update_current_contract_wasm(_new_wasm_hash);
     env.storage().instance().set(&VERSION_KEY, &(version + 1));
 }
 
