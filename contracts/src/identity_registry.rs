@@ -149,7 +149,30 @@ impl IdentityRegistry {
         upgrade::set_admin(env, &admin);
     }
 
-    /// Upgrade the running contract WASM to `new_wasm_hash`.
+    /// Initialize the upgrade mechanism with admin and proxy pattern.
+    /// This must be called once after deployment.
+    pub fn initialize_upgrade(env: &Env, admin: Address, implementation: BytesN<32>) {
+        admin.require_auth();
+        upgrade::initialize_upgrade(env, &admin, &implementation);
+    }
+
+    /// Schedule an upgrade with a timelock for security.
+    /// The upgrade can only be executed after the timelock period expires.
+    pub fn schedule_upgrade(env: &Env, admin: Address, new_wasm_hash: BytesN<32>, proposed_version: u32) {
+        upgrade::schedule_upgrade(env, &admin, new_wasm_hash, proposed_version);
+    }
+
+    /// Execute a scheduled upgrade after timelock expires.
+    pub fn execute_upgrade(env: &Env, admin: Address) {
+        upgrade::execute_upgrade(env, &admin);
+    }
+
+    /// Cancel a pending upgrade.
+    pub fn cancel_upgrade(env: &Env, admin: Address) {
+        upgrade::cancel_upgrade(env, &admin);
+    }
+
+    /// Upgrade the running contract WASM to `new_wasm_hash` (legacy method).
     /// Only the upgrade admin may call this.
     ///
     /// After this call the next ledger-round executes the new code; all
@@ -158,7 +181,7 @@ impl IdentityRegistry {
     /// storage keys.
     pub fn upgrade(env: &Env, admin: Address, new_wasm_hash: BytesN<32>) {
         upgrade::require_admin(env, &admin);
-        upgrade::execute_upgrade(env, new_wasm_hash);
+        upgrade::execute_upgrade_legacy(env, new_wasm_hash);
     }
 
     /// Data migration: v1 → v2.
@@ -197,5 +220,57 @@ impl IdentityRegistry {
     /// Return `true` once `migrate_v1_to_v2` has completed successfully.
     pub fn is_migration_complete(env: &Env) -> bool {
         upgrade::is_migrated_v2(env)
+    }
+
+    // ── New Upgrade Mechanism Functions ───────────────────────────────────────
+
+    /// Get the current proxy implementation address.
+    pub fn get_implementation(env: &Env) -> Option<BytesN<32>> {
+        upgrade::get_implementation(env)
+    }
+
+    /// Get pending upgrade information.
+    pub fn get_pending_upgrade(env: &Env) -> Option<upgrade::PendingUpgrade> {
+        upgrade::get_pending_upgrade(env)
+    }
+
+    /// Get the timelock end timestamp.
+    pub fn get_timelock_end(env: &Env) -> Option<u64> {
+        upgrade::get_timelock_end(env)
+    }
+
+    /// Get the current state hash.
+    pub fn get_state_hash(env: &Env) -> BytesN<32> {
+        upgrade::get_state_hash(env)
+    }
+
+    /// Update the state hash for consistency validation.
+    pub fn update_state_hash(env: &Env, state_hash: BytesN<32>) {
+        upgrade::update_state_hash(env, state_hash);
+    }
+
+    /// Get migration record for a specific version.
+    pub fn get_migration_record(env: &Env, version: u32) -> Option<upgrade::MigrationRecord> {
+        upgrade::get_migration_record(env, version)
+    }
+
+    /// Check if a specific migration has been executed.
+    pub fn is_migration_executed(env: &Env, version: u32) -> bool {
+        upgrade::is_migration_executed(env, version)
+    }
+
+    /// Emergency pause: disable upgrades temporarily.
+    pub fn emergency_pause_upgrades(env: &Env, admin: Address) {
+        upgrade::emergency_pause_upgrades(env, &admin);
+    }
+
+    /// Unpause upgrades after emergency.
+    pub fn unpause_upgrades(env: &Env, admin: Address) {
+        upgrade::unpause_upgrades(env, &admin);
+    }
+
+    /// Check if upgrades are currently paused.
+    pub fn is_upgrades_paused(env: &Env) -> bool {
+        upgrade::is_upgrades_paused(env)
     }
 }
