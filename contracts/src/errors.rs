@@ -10,4 +10,15 @@ pub enum Error {
     SharedDocumentNotFound = 4,
     Unauthorized = 5,
     AlreadyInitialized = 6,
+    // Upgrade mechanism errors
+    UpgradeNotInitialized = 7,
+    InvalidUpgradeHash = 8,
+    MigrationAlreadyRun = 9,
+    StateInconsistency = 10,
+    UpgradeTimelockNotExpired = 11,
+    ProxyNotInitialized = 12,
+    InvalidImplementation = 13,
+    MigrationFailed = 14,
+    VersionMismatch = 15,
+    StorageCorrupted = 16,
 }

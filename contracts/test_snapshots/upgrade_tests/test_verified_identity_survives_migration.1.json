@@ -188,6 +188,48 @@
                       },
                       {
                         "key": {
+                          "string": "migration_registry"
+                        },
+                        "val": {
+                          "map": [
+                            {
+                              "key": {
+                                "u32": 2
+                              },
+                              "val": {
+                                "map": [
+                                  {
+                                    "key": {
+                                      "symbol": "executed_at"
+                                    },
+                                    "val": {
+                                      "u64": 0
+                                    }
+                                  },
+                                  {
+                                    "key": {
+                                      "symbol": "success"
+                                    },
+                                    "val": {
+                                      "bool": true
+                                    }
+                                  },
+                                  {
+                                    "key": {
+                                      "symbol": "version"
+                                    },
+                                    "val": {
+                                      "u32": 2
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": {
                           "string": "upg_admin"
                         },
                         "val": {

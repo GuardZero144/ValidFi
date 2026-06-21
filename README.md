@@ -22,6 +22,7 @@ A decentralized health credential platform built on the Stellar Soroban Smart Co
 - **Batch Verification**: Verify multiple credentials simultaneously for venues and organizations
 - **Health Authority Integration**: Integration with certified health authorities for credential issuance
 - **Cross-Border Recognition**: Standardized format for international travel and compliance
+- **Robust Contract Upgrades**: Secure upgrade mechanism with timelock, proxy pattern, and state consistency validation
 
 ## 🏗️ Architecture
 
@@ -50,6 +51,15 @@ A decentralized health credential platform built on the Stellar Soroban Smart Co
 - Validates credential issuance from certified authorities
 - Stores health authority public keys and signatures
 - Enables credential authority verification
+
+#### Upgrade Mechanism
+- **Proxy Pattern**: Seamless contract upgrades without data loss
+- **Timelock Security**: 24-hour delay between scheduling and executing upgrades
+- **Migration Registry**: Tracks all migrations with version, timestamp, and success status
+- **State Consistency**: Validates storage integrity before upgrades
+- **Access Control**: Admin-only upgrade functions with dual authorization for admin transfer
+- **Emergency Pause**: Ability to temporarily disable upgrades for critical situations
+- **Version Tracking**: Comprehensive version management with rollback prevention
 
 ### Off-Chain Components
 
@@ -296,7 +306,108 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 5. Click "Share Credential"
 6. The recipient will receive access for the specified duration
 
-## 🔧 API Documentation
+## � Contract Upgrade Mechanism
+
+### Overview
+
+The ValidFi smart contracts include a robust upgrade mechanism that allows for secure, controlled contract upgrades without data loss. The system uses a proxy pattern with timelock security, state consistency validation, and comprehensive migration tracking.
+
+### Upgrade Process
+
+#### 1. Initialize Upgrade Mechanism
+
+```bash
+# Call initialize_upgrade with admin address and initial implementation hash
+identity_registry.initialize_upgrade(admin_address, initial_wasm_hash)
+```
+
+#### 2. Schedule Upgrade
+
+```bash
+# Schedule an upgrade with a 24-hour timelock
+identity_registry.schedule_upgrade(
+    admin_address,
+    new_wasm_hash,
+    proposed_version
+)
+```
+
+#### 3. Wait for Timelock
+
+The timelock period (24 hours) must expire before the upgrade can be executed. This provides time for community review and emergency cancellation if needed.
+
+#### 4. Execute Upgrade
+
+```bash
+# After timelock expires, execute the upgrade
+identity_registry.execute_upgrade(admin_address)
+```
+
+#### 5. Run Data Migration (if needed)
+
+```bash
+# Execute data migrations for the new version
+identity_registry.migrate_v1_to_v2(admin_address)
+```
+
+### Security Features
+
+- **Timelock Protection**: 24-hour delay prevents rushed upgrades
+- **Admin Authorization**: Only designated admin can schedule/execute upgrades
+- **State Validation**: System checks storage integrity before upgrade
+- **Migration Tracking**: All migrations recorded with version and timestamp
+- **Emergency Pause**: Admin can pause upgrades during critical situations
+- **Dual Authorization**: Admin transfer requires both current and new admin signatures
+
+### Monitoring Upgrades
+
+```bash
+# Check current version
+identity_registry.get_version()
+
+# Check pending upgrade
+identity_registry.get_pending_upgrade()
+
+# Check timelock end time
+identity_registry.get_timelock_end()
+
+# Check migration status
+identity_registry.is_migration_executed(version)
+
+# Get migration record
+identity_registry.get_migration_record(version)
+```
+
+### Emergency Procedures
+
+#### Cancel Pending Upgrade
+
+```bash
+identity_registry.cancel_upgrade(admin_address)
+```
+
+#### Emergency Pause Upgrades
+
+```bash
+identity_registry.emergency_pause_upgrades(admin_address)
+```
+
+#### Unpause Upgrades
+
+```bash
+identity_registry.unpause_upgrades(admin_address)
+```
+
+### Legacy Upgrade Method
+
+For backward compatibility, a legacy upgrade method is available:
+
+```bash
+# Direct upgrade without timelock (not recommended for production)
+identity_registry.upgrade(admin_address, new_wasm_hash)
+```
+
+## � API Documentation
 
 ### Authentication Endpoints
 
@@ -458,6 +569,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - ✅ Basic wallet integration
 - ✅ IPFS integration
 - ✅ AI-powered verification
+- ✅ Robust contract upgrade mechanism
 
 ### Phase 2 (In Progress)
 - 🔄 Health credential-specific zk-proof circuits
