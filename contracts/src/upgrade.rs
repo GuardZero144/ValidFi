@@ -49,19 +49,25 @@ pub fn initialize_upgrade(env: &Env, admin: &Address, implementation: &BytesN<32
 
     // Set admin
     env.storage().instance().set(&ADMIN_KEY, admin);
-    
+
     // Set initial version
     env.storage().instance().set(&VERSION_KEY, &INITIAL_VERSION);
-    
+
     // Set proxy implementation
-    env.storage().instance().set(&PROXY_IMPLEMENTATION_KEY, implementation);
-    
+    env.storage()
+        .instance()
+        .set(&PROXY_IMPLEMENTATION_KEY, implementation);
+
     // Initialize migration registry
     let migration_registry: Map<u32, MigrationRecord> = Map::new(env);
-    env.storage().instance().set(&MIGRATION_REGISTRY_KEY, &migration_registry);
-    
+    env.storage()
+        .instance()
+        .set(&MIGRATION_REGISTRY_KEY, &migration_registry);
+
     // Initialize state hash for consistency checking
-    env.storage().instance().set(&STATE_HASH_KEY, &BytesN::from_array(env, &[0u8; 32]));
+    env.storage()
+        .instance()
+        .set(&STATE_HASH_KEY, &BytesN::from_array(env, &[0u8; 32]));
 }
 
 /// Set the upgrade admin (legacy compatibility).
@@ -113,7 +119,9 @@ pub fn get_implementation(env: &Env) -> Option<BytesN<32>> {
 /// Update the proxy implementation (internal use only).
 /// Must be called through the upgrade process.
 fn set_implementation(env: &Env, implementation: &BytesN<32>) {
-    env.storage().instance().set(&PROXY_IMPLEMENTATION_KEY, implementation);
+    env.storage()
+        .instance()
+        .set(&PROXY_IMPLEMENTATION_KEY, implementation);
 }
 
 // ── Upgrade Mechanism with Timelock ─────────────────────────────────────────────
@@ -135,9 +143,14 @@ pub fn execute_upgrade_legacy(env: &Env, new_wasm_hash: BytesN<32>) {
 
 /// Schedule an upgrade with a timelock for security.
 /// The upgrade can only be executed after the timelock period expires.
-pub fn schedule_upgrade(env: &Env, admin: &Address, new_wasm_hash: BytesN<32>, proposed_version: u32) {
+pub fn schedule_upgrade(
+    env: &Env,
+    admin: &Address,
+    new_wasm_hash: BytesN<32>,
+    proposed_version: u32,
+) {
     require_admin(env, admin);
-    
+
     // Validate proposed version
     let current_version = get_version(env);
     if proposed_version <= current_version {
@@ -146,69 +159,76 @@ pub fn schedule_upgrade(env: &Env, admin: &Address, new_wasm_hash: BytesN<32>, p
     if proposed_version > MAX_VERSION {
         panic_with_error!(env, Error::VersionMismatch);
     }
-    
+
     // Validate WASM hash is not zero
     if new_wasm_hash == BytesN::from_array(env, &[0u8; 32]) {
         panic_with_error!(env, Error::InvalidUpgradeHash);
     }
-    
+
     // Create pending upgrade
     let pending_upgrade = PendingUpgrade {
         new_wasm_hash,
         scheduled_at: env.ledger().timestamp(),
         proposed_version,
     };
-    
+
     // Set timelock
-    env.storage().instance().set(&TIMELOCK_KEY, &env.ledger().timestamp());
-    
+    env.storage()
+        .instance()
+        .set(&TIMELOCK_KEY, &env.ledger().timestamp());
+
     // Store pending upgrade
-    env.storage().instance().set(&PENDING_UPGRADE_KEY, &pending_upgrade);
+    env.storage()
+        .instance()
+        .set(&PENDING_UPGRADE_KEY, &pending_upgrade);
 }
 
 /// Execute a scheduled upgrade after timelock expires.
 pub fn execute_upgrade(env: &Env, admin: &Address) {
     require_admin(env, admin);
-    
+
     // Check if there's a pending upgrade
     let pending_upgrade: PendingUpgrade = env
         .storage()
         .instance()
         .get(&PENDING_UPGRADE_KEY)
         .unwrap_or_else(|| panic_with_error!(env, Error::UpgradeNotInitialized));
-    
+
     // Check timelock
     let timelock_set: u64 = env
         .storage()
         .instance()
         .get(&TIMELOCK_KEY)
         .unwrap_or_else(|| panic_with_error!(env, Error::UpgradeNotInitialized));
-    
+
     let current_time = env.ledger().timestamp();
     if current_time < timelock_set + TIMELOCK_SECONDS {
         panic_with_error!(env, Error::UpgradeTimelockNotExpired);
     }
-    
+
     // Validate state consistency before upgrade
     if !validate_state_consistency(env) {
         panic_with_error!(env, Error::StateInconsistency);
     }
-    
+
     // Execute upgrade
     let _current_version = get_version(env);
     // Note: In production, this would deploy the actual WASM
     // For testing, we skip the actual deployment and just update the version
     #[cfg(not(test))]
-    env.deployer().update_current_contract_wasm(pending_upgrade.new_wasm_hash.clone());
-    env.storage().instance().set(&VERSION_KEY, &pending_upgrade.proposed_version);
-    
+    env.deployer()
+        .update_current_contract_wasm(pending_upgrade.new_wasm_hash.clone());
+    env.storage()
+        .instance()
+        .set(&VERSION_KEY, &pending_upgrade.proposed_version);
+
     // Update proxy implementation
     set_implementation(env, &pending_upgrade.new_wasm_hash);
-    
+
     // Clear pending upgrade
     env.storage().instance().remove(&PENDING_UPGRADE_KEY);
     env.storage().instance().remove(&TIMELOCK_KEY);
-    
+
     // Record successful upgrade in migration registry
     record_migration(env, pending_upgrade.proposed_version, true);
 }
@@ -216,11 +236,11 @@ pub fn execute_upgrade(env: &Env, admin: &Address) {
 /// Cancel a pending upgrade.
 pub fn cancel_upgrade(env: &Env, admin: &Address) {
     require_admin(env, admin);
-    
+
     if !env.storage().instance().has(&PENDING_UPGRADE_KEY) {
         panic_with_error!(env, Error::UpgradeNotInitialized);
     }
-    
+
     env.storage().instance().remove(&PENDING_UPGRADE_KEY);
     env.storage().instance().remove(&TIMELOCK_KEY);
 }
@@ -260,7 +280,7 @@ pub fn validate_state_consistency(env: &Env) -> bool {
     let has_admin = env.storage().instance().has(&ADMIN_KEY);
     let has_version = env.storage().instance().has(&VERSION_KEY);
     let has_implementation = env.storage().instance().has(&PROXY_IMPLEMENTATION_KEY);
-    
+
     has_admin && has_version && has_implementation
 }
 
@@ -272,12 +292,12 @@ pub fn run_migration_v2(env: &Env) {
     if env.storage().instance().has(&MIGRATED_V2_KEY) {
         panic_with_error!(env, Error::MigrationAlreadyRun);
     }
-    
+
     env.storage()
         .instance()
         .set(&CRED_TTL_KEY, &DEFAULT_CRED_TTL_SECONDS);
     env.storage().instance().set(&MIGRATED_V2_KEY, &true);
-    
+
     // Record migration
     record_migration(env, 2, true);
 }
@@ -289,15 +309,17 @@ fn record_migration(env: &Env, version: u32, success: bool) {
         .instance()
         .get(&MIGRATION_REGISTRY_KEY)
         .unwrap_or_else(|| Map::new(env));
-    
+
     let record = MigrationRecord {
         version,
         executed_at: env.ledger().timestamp(),
         success,
     };
-    
+
     migration_registry.set(version, record);
-    env.storage().instance().set(&MIGRATION_REGISTRY_KEY, &migration_registry);
+    env.storage()
+        .instance()
+        .set(&MIGRATION_REGISTRY_KEY, &migration_registry);
 }
 
 /// Get migration record for a specific version.
@@ -307,7 +329,7 @@ pub fn get_migration_record(env: &Env, version: u32) -> Option<MigrationRecord> 
         .instance()
         .get(&MIGRATION_REGISTRY_KEY)
         .unwrap_or_else(|| Map::new(env));
-    
+
     migration_registry.get(version)
 }
 
@@ -348,16 +370,12 @@ pub fn emergency_pause_upgrades(env: &Env, admin: &Address) {
 /// Unpause upgrades after emergency.
 pub fn unpause_upgrades(env: &Env, admin: &Address) {
     require_admin(env, admin);
-    let current_timelock: u64 = env
-        .storage()
-        .instance()
-        .get(&TIMELOCK_KEY)
-        .unwrap_or(0);
-    
+    let current_timelock: u64 = env.storage().instance().get(&TIMELOCK_KEY).unwrap_or(0);
+
     if current_timelock != u64::MAX {
         panic_with_error!(env, Error::Unauthorized);
     }
-    
+
     env.storage().instance().remove(&TIMELOCK_KEY);
 }
 

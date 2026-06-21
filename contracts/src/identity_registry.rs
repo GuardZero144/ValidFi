@@ -158,7 +158,12 @@ impl IdentityRegistry {
 
     /// Schedule an upgrade with a timelock for security.
     /// The upgrade can only be executed after the timelock period expires.
-    pub fn schedule_upgrade(env: &Env, admin: Address, new_wasm_hash: BytesN<32>, proposed_version: u32) {
+    pub fn schedule_upgrade(
+        env: &Env,
+        admin: Address,
+        new_wasm_hash: BytesN<32>,
+        proposed_version: u32,
+    ) {
         upgrade::schedule_upgrade(env, &admin, new_wasm_hash, proposed_version);
     }
 

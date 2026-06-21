@@ -248,10 +248,10 @@ fn test_is_migration_complete_true_after_migration() {
 fn test_schedule_upgrade_creates_pending_upgrade() {
     let (env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &2);
-    
+
     let pending = client.get_pending_upgrade();
     assert!(pending.is_some());
     let pending = pending.unwrap();
@@ -264,7 +264,7 @@ fn test_schedule_upgrade_panics_for_non_admin() {
     let (env, client, admin) = setup();
     let attacker = Address::generate(&env);
     client.initialize_admin(&admin);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&attacker, &new_wasm_hash, &2);
 }
@@ -274,7 +274,7 @@ fn test_schedule_upgrade_panics_for_non_admin() {
 fn test_schedule_upgrade_panics_for_invalid_version() {
     let (env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &1); // Same as current
 }
@@ -284,7 +284,7 @@ fn test_schedule_upgrade_panics_for_invalid_version() {
 fn test_schedule_upgrade_panics_for_zero_hash() {
     let (env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     let zero_hash: BytesN<32> = BytesN::from_array(&env, &[0u8; 32]);
     client.schedule_upgrade(&admin, &zero_hash, &2);
 }
@@ -293,10 +293,10 @@ fn test_schedule_upgrade_panics_for_zero_hash() {
 fn test_get_timelock_end_returns_timestamp() {
     let (env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &2);
-    
+
     let timelock_end = client.get_timelock_end();
     assert!(timelock_end.is_some());
 }
@@ -308,15 +308,16 @@ fn test_execute_upgrade_after_timelock() {
     let (env, client, admin) = setup();
     let initial_implementation: BytesN<32> = BytesN::from_array(&env, &[1u8; 32]);
     client.initialize_upgrade(&admin, &initial_implementation);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &2);
-    
+
     // Advance time past timelock
-    env.ledger().set_timestamp(env.ledger().timestamp() + 100000);
-    
+    env.ledger()
+        .set_timestamp(env.ledger().timestamp() + 100000);
+
     client.execute_upgrade(&admin);
-    
+
     assert_eq!(client.get_version(), 2);
     assert!(client.get_pending_upgrade().is_none());
 }
@@ -326,10 +327,10 @@ fn test_execute_upgrade_after_timelock() {
 fn test_execute_upgrade_panics_before_timelock() {
     let (env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &2);
-    
+
     // Try to execute immediately (before timelock expires)
     client.execute_upgrade(&admin);
 }
@@ -340,12 +341,13 @@ fn test_execute_upgrade_panics_for_non_admin() {
     let (env, client, admin) = setup();
     let attacker = Address::generate(&env);
     client.initialize_admin(&admin);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &2);
-    
-    env.ledger().set_timestamp(env.ledger().timestamp() + 100000);
-    
+
+    env.ledger()
+        .set_timestamp(env.ledger().timestamp() + 100000);
+
     client.execute_upgrade(&attacker);
 }
 
@@ -355,14 +357,14 @@ fn test_execute_upgrade_panics_for_non_admin() {
 fn test_cancel_upgrade_removes_pending_upgrade() {
     let (env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &2);
-    
+
     assert!(client.get_pending_upgrade().is_some());
-    
+
     client.cancel_upgrade(&admin);
-    
+
     assert!(client.get_pending_upgrade().is_none());
 }
 
@@ -372,10 +374,10 @@ fn test_cancel_upgrade_panics_for_non_admin() {
     let (env, client, admin) = setup();
     let attacker = Address::generate(&env);
     client.initialize_admin(&admin);
-    
+
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[2u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &2);
-    
+
     client.cancel_upgrade(&attacker);
 }
 
@@ -385,10 +387,10 @@ fn test_cancel_upgrade_panics_for_non_admin() {
 fn test_update_state_hash() {
     let (env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     let state_hash: BytesN<32> = BytesN::from_array(&env, &[5u8; 32]);
     client.update_state_hash(&state_hash);
-    
+
     assert_eq!(client.get_state_hash(), state_hash);
 }
 
@@ -396,7 +398,7 @@ fn test_update_state_hash() {
 fn test_get_state_hash_returns_zero_before_update() {
     let (env, client, admin) = setup();
     client.initialize_upgrade(&admin, &BytesN::from_array(&env, &[1u8; 32]));
-    
+
     let zero_hash = BytesN::from_array(&env, &[0u8; 32]);
     assert_eq!(client.get_state_hash(), zero_hash);
 }
@@ -407,9 +409,9 @@ fn test_get_state_hash_returns_zero_before_update() {
 fn test_migration_record_created_after_migration() {
     let (_, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     client.migrate_v1_to_v2(&admin);
-    
+
     let record = client.get_migration_record(&2);
     assert!(record.is_some());
     let record = record.unwrap();
@@ -421,11 +423,11 @@ fn test_migration_record_created_after_migration() {
 fn test_is_migration_executed() {
     let (_, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     assert!(!client.is_migration_executed(&2));
-    
+
     client.migrate_v1_to_v2(&admin);
-    
+
     assert!(client.is_migration_executed(&2));
 }
 
@@ -435,11 +437,11 @@ fn test_is_migration_executed() {
 fn test_emergency_pause_upgrades() {
     let (_env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     assert!(!client.is_upgrades_paused());
-    
+
     client.emergency_pause_upgrades(&admin);
-    
+
     assert!(client.is_upgrades_paused());
 }
 
@@ -447,10 +449,10 @@ fn test_emergency_pause_upgrades() {
 fn test_unpause_upgrades() {
     let (_env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     client.emergency_pause_upgrades(&admin);
     assert!(client.is_upgrades_paused());
-    
+
     client.unpause_upgrades(&admin);
     assert!(!client.is_upgrades_paused());
 }
@@ -461,7 +463,7 @@ fn test_emergency_pause_panics_for_non_admin() {
     let (env, client, admin) = setup();
     let attacker = Address::generate(&env);
     client.initialize_admin(&admin);
-    
+
     client.emergency_pause_upgrades(&attacker);
 }
 
@@ -470,7 +472,7 @@ fn test_emergency_pause_panics_for_non_admin() {
 fn test_unpause_panics_when_not_paused() {
     let (_env, client, admin) = setup();
     client.initialize_admin(&admin);
-    
+
     client.unpause_upgrades(&admin);
 }
 
@@ -562,8 +564,9 @@ fn test_identity_survives_upgrade_with_timelock() {
 
     let new_wasm_hash: BytesN<32> = BytesN::from_array(&env, &[5u8; 32]);
     client.schedule_upgrade(&admin, &new_wasm_hash, &2);
-    
-    env.ledger().set_timestamp(env.ledger().timestamp() + 100000);
+
+    env.ledger()
+        .set_timestamp(env.ledger().timestamp() + 100000);
     client.execute_upgrade(&admin);
 
     // Identity record should survive upgrade
