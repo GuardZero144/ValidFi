@@ -21,6 +21,37 @@ pub enum VerificationEvent {
     VerificationRevoked,
 }
 
+/// Typed storage keys.
+///
+/// Per-credential entries (`Record`, `IdentityIndex`, `RejectReason`) and the
+/// `RevokedList` live in **persistent** storage so that each operation only
+/// reads and writes its own entry. They were previously kept in *instance*
+/// storage, which serialises the contract's entire data set on every call and
+/// therefore made each credential operation cost grow linearly with the total
+/// number of stored credentials (O(n) per op, O(n²) overall). See
+/// `docs/PERFORMANCE.md` and the `benchmarks` module for the measured impact.
+///
+/// Only the monotonic `Counter` remains in instance storage — it is a single,
+/// bounded value that every `submit_proof` must touch anyway.
+#[contracttype]
+pub enum DataKey {
+    Counter,
+    Record(u64),
+    IdentityIndex(u64),
+    RejectReason(u64),
+    RevokedList,
+}
+
+// Persistent-entry time-to-live, expressed in ledgers (~5s each on Stellar).
+// Entries are extended back up to ~31 days whenever they are read or written so
+// active credentials are not archived out from under their owners.
+const PERSISTENT_TTL_THRESHOLD: u32 = 17_280; // ~1 day
+const PERSISTENT_TTL_EXTEND: u32 = 535_680; // ~31 days
+
+// Instance-entry TTL (only holds the bounded counter).
+const INSTANCE_TTL_THRESHOLD: u32 = 17_280; // ~1 day
+const INSTANCE_TTL_EXTEND: u32 = 535_680; // ~31 days
+
 #[contract]
 pub struct Verification;
 
@@ -38,7 +69,7 @@ impl Verification {
         let verification_id = env
             .storage()
             .instance()
-            .get::<_, u64>(&"verification_counter")
+            .get::<_, u64>(&DataKey::Counter)
             .unwrap_or(0u64)
             + 1;
 
@@ -56,30 +87,25 @@ impl Verification {
 
         env.storage()
             .instance()
-            .set(&"verification_counter", &verification_id);
-        env.storage()
-            .instance()
-            .set(&(verification_id, "record"), &record);
-        env.storage()
-            .instance()
-            .set(&(identity_id, "verification"), &verification_id);
+            .set(&DataKey::Counter, &verification_id);
+        bump_instance(env);
+
+        write_record(env, verification_id, &record);
+
+        let index_key = DataKey::IdentityIndex(identity_id);
+        env.storage().persistent().set(&index_key, &verification_id);
+        bump_persistent(env, &index_key);
 
         verification_id
     }
 
     pub fn approve_verification(env: &Env, verification_id: u64) -> Result<(), Error> {
-        let mut record: VerificationRecord = env
-            .storage()
-            .instance()
-            .get(&(verification_id, "record"))
-            .ok_or(Error::VerificationNotFound)?;
+        let mut record = read_record(env, verification_id)?;
 
         record.verifier.require_auth();
         record.status = String::from_str(env, "approved");
 
-        env.storage()
-            .instance()
-            .set(&(verification_id, "record"), &record);
+        write_record(env, verification_id, &record);
         Ok(())
     }
 
@@ -88,45 +114,36 @@ impl Verification {
         verification_id: u64,
         reason: String,
     ) -> Result<(), Error> {
-        let mut record: VerificationRecord = env
-            .storage()
-            .instance()
-            .get(&(verification_id, "record"))
-            .ok_or(Error::VerificationNotFound)?;
+        let mut record = read_record(env, verification_id)?;
 
         record.verifier.require_auth();
         record.status = String::from_str(env, "rejected");
 
-        env.storage()
-            .instance()
-            .set(&(verification_id, "record"), &record);
-        env.storage()
-            .instance()
-            .set(&(verification_id, "reason"), &reason);
+        write_record(env, verification_id, &record);
+
+        let reason_key = DataKey::RejectReason(verification_id);
+        env.storage().persistent().set(&reason_key, &reason);
+        bump_persistent(env, &reason_key);
         Ok(())
     }
 
     pub fn get_verification(env: &Env, verification_id: u64) -> Result<VerificationRecord, Error> {
-        env.storage()
-            .instance()
-            .get(&(verification_id, "record"))
-            .ok_or(Error::VerificationNotFound)
+        read_record(env, verification_id)
     }
 
     pub fn get_verification_by_identity(env: &Env, identity_id: u64) -> Result<u64, Error> {
-        env.storage()
-            .instance()
-            .get(&(identity_id, "verification"))
-            .ok_or(Error::VerificationNotFound)
+        let index_key = DataKey::IdentityIndex(identity_id);
+        let verification_id: u64 = env
+            .storage()
+            .persistent()
+            .get(&index_key)
+            .ok_or(Error::VerificationNotFound)?;
+        bump_persistent(env, &index_key);
+        Ok(verification_id)
     }
 
     pub fn get_verification_status(env: &Env, verification_id: u64) -> Result<String, Error> {
-        let record: VerificationRecord = env
-            .storage()
-            .instance()
-            .get(&(verification_id, "record"))
-            .ok_or(Error::VerificationNotFound)?;
-
+        let record = read_record(env, verification_id)?;
         Ok(record.status)
     }
 
@@ -135,11 +152,7 @@ impl Verification {
         verification_id: u64,
         reason: String,
     ) -> Result<(), Error> {
-        let mut record: VerificationRecord = env
-            .storage()
-            .instance()
-            .get(&(verification_id, "record"))
-            .ok_or(Error::VerificationNotFound)?;
+        let mut record = read_record(env, verification_id)?;
 
         record.verifier.require_auth();
 
@@ -147,21 +160,20 @@ impl Verification {
         record.revoked_at = env.ledger().timestamp();
         record.revocation_reason = reason;
 
-        env.storage()
-            .instance()
-            .set(&(verification_id, "record"), &record);
+        write_record(env, verification_id, &record);
 
         // Add to revocation list
         let mut revoked_list: Vec<u64> = env
             .storage()
-            .instance()
-            .get(&"revoked_verifications")
+            .persistent()
+            .get(&DataKey::RevokedList)
             .unwrap_or(Vec::new(env));
 
         revoked_list.push_back(verification_id);
         env.storage()
-            .instance()
-            .set(&"revoked_verifications", &revoked_list);
+            .persistent()
+            .set(&DataKey::RevokedList, &revoked_list);
+        bump_persistent(env, &DataKey::RevokedList);
 
         // Emit revocation event
         env.events().publish(
@@ -173,12 +185,7 @@ impl Verification {
     }
 
     pub fn is_verification_revoked(env: &Env, verification_id: u64) -> Result<bool, Error> {
-        let record: VerificationRecord = env
-            .storage()
-            .instance()
-            .get(&(verification_id, "record"))
-            .ok_or(Error::VerificationNotFound)?;
-
+        let record = read_record(env, verification_id)?;
         Ok(record.revoked)
     }
 
@@ -186,29 +193,53 @@ impl Verification {
         env: &Env,
         verification_id: u64,
     ) -> Result<(bool, u64, String), Error> {
-        let record: VerificationRecord = env
-            .storage()
-            .instance()
-            .get(&(verification_id, "record"))
-            .ok_or(Error::VerificationNotFound)?;
-
+        let record = read_record(env, verification_id)?;
         Ok((record.revoked, record.revoked_at, record.revocation_reason))
     }
 
     pub fn get_revoked_verifications(env: &Env) -> Vec<u64> {
         env.storage()
-            .instance()
-            .get(&"revoked_verifications")
+            .persistent()
+            .get(&DataKey::RevokedList)
             .unwrap_or(Vec::new(env))
     }
 
     pub fn is_verification_valid(env: &Env, verification_id: u64) -> Result<bool, Error> {
-        let record: VerificationRecord = env
-            .storage()
-            .instance()
-            .get(&(verification_id, "record"))
-            .ok_or(Error::VerificationNotFound)?;
-
+        let record = read_record(env, verification_id)?;
         Ok(record.status == String::from_str(env, "approved") && !record.revoked)
     }
+}
+
+// ── Storage helpers ─────────────────────────────────────────────────────────
+
+/// Read a credential record from persistent storage and extend its TTL so an
+/// actively-used credential is not archived.
+fn read_record(env: &Env, verification_id: u64) -> Result<VerificationRecord, Error> {
+    let key = DataKey::Record(verification_id);
+    let record: VerificationRecord = env
+        .storage()
+        .persistent()
+        .get(&key)
+        .ok_or(Error::VerificationNotFound)?;
+    bump_persistent(env, &key);
+    Ok(record)
+}
+
+/// Persist a credential record and extend its TTL.
+fn write_record(env: &Env, verification_id: u64, record: &VerificationRecord) {
+    let key = DataKey::Record(verification_id);
+    env.storage().persistent().set(&key, record);
+    bump_persistent(env, &key);
+}
+
+fn bump_persistent(env: &Env, key: &DataKey) {
+    env.storage()
+        .persistent()
+        .extend_ttl(key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND);
+}
+
+fn bump_instance(env: &Env) {
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND);
 }

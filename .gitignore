@@ -39,6 +39,11 @@ yarn-error.log*
 contracts/target/
 Cargo.lock
 
+# Benchmark test snapshots are large generated artifacts (load tests create
+# hundreds of ledger entries) — not worth tracking. Integration-test snapshots
+# are still tracked.
+contracts/test_snapshots/benchmarks/
+
 # Database
 *.db
 *.sqlite
