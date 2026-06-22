@@ -21,4 +21,9 @@ pub enum Error {
     MigrationFailed = 14,
     VersionMismatch = 15,
     StorageCorrupted = 16,
+    // Auditing errors
+    SuspiciousActivity = 17,
+    IssuerNotAuthorized = 18,
+    CredentialRevoked = 19,
+    CredentialNotFound = 20,
 }

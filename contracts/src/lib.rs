@@ -1,9 +1,13 @@
 #![no_std]
 
 pub mod access_control;
+pub mod auditing;
 pub mod data_sharing;
 pub mod errors;
+pub mod events;
 pub mod identity_registry;
+pub mod storage;
+pub mod types;
 pub mod upgrade;
 pub mod verification;
 
@@ -15,6 +19,9 @@ mod integration_tests;
 
 #[cfg(test)]
 mod benchmarks;
+
+#[cfg(test)]
+mod test;
 
 pub use access_control::AccessControl;
 pub use data_sharing::DataSharing;
