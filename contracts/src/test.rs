@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 use crate::auditing::{Auditing, AuditingClient};
-use crate::errors::Error;
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String, Symbol};
 
 #[test]
@@ -100,5 +99,4 @@ fn test_events_emitted() {
         &Symbol::new(&env, "issued"),
         &String::from_str(&env, "Emit test"),
     );
-    assert!(true);
 }

@@ -75,7 +75,7 @@ impl Auditing {
         Ok(())
     }
 
-    pub fn require_auth(env: Env, actor: Address) {
+    pub fn require_auth(_env: Env, actor: Address) {
         actor.require_auth();
     }
 
