@@ -69,7 +69,6 @@ impl Auditing {
                 Symbol::new(&env, "suspicious"),
                 String::from_str(&env, "Excessive verification failures"),
             );
-            return Err(Error::SuspiciousActivity);
         }
 
         Ok(())

@@ -38,8 +38,7 @@ fn test_suspicious_activity_logged() {
     }
 
     // 6th failure should trigger suspicious activity
-    let res = client.try_track_activity(&actor, &true);
-    assert!(res.is_err());
+    client.track_activity(&actor, &true);
 
     // Verify dummy credential ID was used for the event
     let dummy_id = BytesN::from_array(&env, &[0; 32]);
