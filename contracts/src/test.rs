@@ -1,8 +1,8 @@
 #![cfg(test)]
 
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String, Symbol};
 use crate::auditing::{Auditing, AuditingClient};
 use crate::errors::Error;
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String, Symbol};
 
 #[test]
 fn test_audit_record_created() {

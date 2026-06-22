@@ -56,9 +56,10 @@ impl Auditing {
             failed_attempts = 0;
         }
 
-        env.storage()
-            .instance()
-            .set(&AuditDataKey::ActivityTracker(actor.clone()), &failed_attempts);
+        env.storage().instance().set(
+            &AuditDataKey::ActivityTracker(actor.clone()),
+            &failed_attempts,
+        );
 
         if failed_attempts > 5 {
             Self::log_audit_event(
@@ -99,7 +100,11 @@ impl Auditing {
         Ok(())
     }
 
-    pub fn issuer_authorized(env: &Env, issuer: &Address, credential_id: &BytesN<32>) -> Result<(), Error> {
+    pub fn issuer_authorized(
+        env: &Env,
+        issuer: &Address,
+        credential_id: &BytesN<32>,
+    ) -> Result<(), Error> {
         let records = Self::get_audit_report(env.clone(), credential_id.clone());
         for record in records.iter() {
             if record.action == Symbol::new(env, "issued") {
