@@ -75,25 +75,25 @@ impl Auditing {
         Ok(())
     }
 
-    pub fn require_auth(actor: &Address) {
+    pub fn require_auth(env: Env, actor: Address) {
         actor.require_auth();
     }
 
-    pub fn credential_exists(env: &Env, credential_id: &BytesN<32>) -> Result<(), Error> {
+    pub fn credential_exists(env: Env, credential_id: BytesN<32>) -> Result<(), Error> {
         let records: Option<Vec<AuditRecord>> = env
             .storage()
             .persistent()
-            .get(&AuditDataKey::AuditRecords(credential_id.clone()));
+            .get(&AuditDataKey::AuditRecords(credential_id));
         if records.is_none() {
             return Err(Error::CredentialNotFound);
         }
         Ok(())
     }
 
-    pub fn credential_not_revoked(env: &Env, credential_id: &BytesN<32>) -> Result<(), Error> {
-        let records = Self::get_audit_report(env.clone(), credential_id.clone());
+    pub fn credential_not_revoked(env: Env, credential_id: BytesN<32>) -> Result<(), Error> {
+        let records = Self::get_audit_report(env.clone(), credential_id);
         for record in records.iter() {
-            if record.action == Symbol::new(env, "revoked") {
+            if record.action == Symbol::new(&env, "revoked") {
                 return Err(Error::CredentialRevoked);
             }
         }
@@ -101,14 +101,14 @@ impl Auditing {
     }
 
     pub fn issuer_authorized(
-        env: &Env,
-        issuer: &Address,
-        credential_id: &BytesN<32>,
+        env: Env,
+        issuer: Address,
+        credential_id: BytesN<32>,
     ) -> Result<(), Error> {
-        let records = Self::get_audit_report(env.clone(), credential_id.clone());
+        let records = Self::get_audit_report(env.clone(), credential_id);
         for record in records.iter() {
-            if record.action == Symbol::new(env, "issued") {
-                if record.actor != *issuer {
+            if record.action == Symbol::new(&env, "issued") {
+                if record.actor != issuer {
                     return Err(Error::IssuerNotAuthorized);
                 }
                 return Ok(());
