@@ -23,6 +23,9 @@ mod benchmarks;
 #[cfg(test)]
 mod test;
 
+#[cfg(test)]
+mod comprehensive_tests;
+
 pub use access_control::AccessControl;
 pub use data_sharing::DataSharing;
 pub use errors::Error;
