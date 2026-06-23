@@ -26,4 +26,8 @@ pub enum Error {
     IssuerNotAuthorized = 18,
     CredentialRevoked = 19,
     CredentialNotFound = 20,
+    // Health authority errors
+    AuthorityNotFound = 21,
+    AuthorityAlreadyRegistered = 22,
+    AuthorityInactive = 23,
 }
