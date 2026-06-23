@@ -5,6 +5,7 @@ pub mod auditing;
 pub mod data_sharing;
 pub mod errors;
 pub mod events;
+pub mod health_authority;
 pub mod identity_registry;
 pub mod storage;
 pub mod types;
@@ -21,10 +22,14 @@ mod integration_tests;
 mod benchmarks;
 
 #[cfg(test)]
+mod health_authority_tests;
+
+#[cfg(test)]
 mod test;
 
 pub use access_control::AccessControl;
 pub use data_sharing::DataSharing;
 pub use errors::Error;
+pub use health_authority::HealthAuthority;
 pub use identity_registry::IdentityRegistry;
 pub use verification::Verification;

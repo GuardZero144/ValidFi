@@ -49,8 +49,8 @@ A decentralized health credential platform built on the Stellar Soroban Smart Co
 #### Health Authority Contract
 - Manages authorized health authority issuers
 - Validates credential issuance from certified authorities
-- Stores health authority public keys and signatures
-- Enables credential authority verification
+- Stores authority Ed25519 public keys and active/suspended status
+- Verifies authority signatures against the registered key
 
 #### Upgrade Mechanism
 - **Proxy Pattern**: Seamless contract upgrades without data loss
