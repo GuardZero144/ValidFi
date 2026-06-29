@@ -5,6 +5,8 @@ import { WalletConnect } from '@/components/wallet-connect';
 import { HealthCredentialVault } from '@/components/health-credential-vault';
 import { VaccinationVerificationCenter } from '@/components/vaccination-verification-center';
 import { CredentialSharing } from '@/components/credential-sharing';
+import { NotificationBell } from '@/components/NotificationBell';
+import { NotificationPreferences } from '@/components/NotificationPreferences';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('vault');
@@ -20,7 +22,10 @@ export default function Home() {
               <p className="text-green-200">Tamper-Proof Health Credentials on Stellar Soroban</p>
               <p className="text-green-300 text-sm mt-1">Prove vaccination status with zero-knowledge proofs — no names, no birthdates, no medical history exposed</p>
             </div>
-            <WalletConnect onConnect={setWalletAddress} />
+            <div className="flex items-center gap-4">
+              <NotificationBell />
+              <WalletConnect onConnect={setWalletAddress} />
+            </div>
           </div>
         </header>
 
@@ -32,6 +37,7 @@ export default function Home() {
                   { id: 'vault', label: 'Health Credential Vault' },
                   { id: 'verification', label: 'Vaccination Verification' },
                   { id: 'sharing', label: 'Credential Sharing' },
+                  { id: 'notifications', label: 'Notification Settings' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -52,6 +58,7 @@ export default function Home() {
               {activeTab === 'vault' && <HealthCredentialVault walletAddress={walletAddress} />}
               {activeTab === 'verification' && <VaccinationVerificationCenter walletAddress={walletAddress} />}
               {activeTab === 'sharing' && <CredentialSharing walletAddress={walletAddress} />}
+              {activeTab === 'notifications' && <NotificationPreferences />}
             </div>
           </>
         ) : (
