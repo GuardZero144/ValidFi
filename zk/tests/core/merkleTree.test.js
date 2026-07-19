@@ -38,3 +38,20 @@ describe("MerkleTree Circuit Tests", function() {
             pathElements: [sibling1, sibling2, sibling3],
             pathIndices: [0, 0, 0]
         };
+        
+        const witness = await circuit.calculateWitness(input);
+        await circuit.assertOut(witness, { isValid: 1 });
+    });
+    
+    it("should reject invalid merkle proof", async () => {
+        const input = {
+            root: 999,
+            leaf: 1,
+            pathElements: [2, 3, 4],
+            pathIndices: [0, 0, 0]
+        };
+        
+        const witness = await circuit.calculateWitness(input);
+        await circuit.assertOut(witness, { isValid: 0 });
+    });
+});
