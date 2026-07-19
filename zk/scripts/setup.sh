@@ -19,3 +19,25 @@ if [ ! -f "$BUILD_DIR/$PTAU_FILE" ]; then
 else
     echo "Powers of tau file already exists."
 fi
+
+
+# Function to setup a circuit
+setup_circuit() {
+    local circuit_name=$1
+    echo ""
+    echo "Setting up $circuit_name..."
+    
+    # Generate zkey
+    snarkjs groth16 setup \
+        $BUILD_DIR/${circuit_name}.r1cs \
+        $BUILD_DIR/$PTAU_FILE \
+        $BUILD_DIR/${circuit_name}_0000.zkey
+    
+    # Contribute to ceremony
+    echo "random entropy" | snarkjs zkey contribute \
+        $BUILD_DIR/${circuit_name}_0000.zkey \
+        $BUILD_DIR/${circuit_name}_final.zkey \
+        --name="First contribution"
+    
+    # Export verification key
+    snarkjs zkey export verificationkey \
