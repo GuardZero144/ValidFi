@@ -961,3 +961,82 @@ fn test_re_share_credential() {
     let new_share = sharing.get_credential_share(&new_share_id);
     assert_eq!(new_share.permission, crate::types::SharingPermission::View);
 }
+
+#[test]
+fn test_re_share_denied_without_permission() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let third_party = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[12u8; 32]);
+
+    let share_id = sharing.share_credential(
+        &owner, &recipient, &cred_hash,
+        &Bytes::from_array(&env, &[80u8; 16]),
+        &crate::types::SharingPermission::View, &86400,
+    );
+
+    let res = sharing.try_re_share_credential(
+        &share_id, &third_party,
+        &crate::types::SharingPermission::View, &3600,
+    );
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_revoke_expired_share() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[13u8; 32]);
+    let start_ts = env.ledger().timestamp();
+
+    let share_id = sharing.share_credential(
+        &owner, &recipient, &cred_hash,
+        &Bytes::from_array(&env, &[90u8; 16]),
+        &crate::types::SharingPermission::Download, &100,
+    );
+
+    env.ledger().set_timestamp(start_ts + 200);
+    let reason = soroban_sdk::String::from_str(&env, "expired");
+    sharing.revoke_credential_share(&share_id, &reason);
+
+    let share = sharing.get_credential_share(&share_id);
+    assert!(!share.is_active);
+    assert_eq!(share.revocation_reason, reason);
+}
+
+#[test]
+fn test_get_shares_by_owner_and_recipient() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[14u8; 32]);
+
+    sharing.share_credential(
+        &owner, &recipient, &cred_hash,
+        &Bytes::from_array(&env, &[100u8; 16]),
+        &crate::types::SharingPermission::View, &86400,
+    );
+
+    let owner_shares = sharing.get_shares_by_owner(&owner);
+    assert_eq!(owner_shares.len(), 1);
+
+    let recipient_shares = sharing.get_shares_by_recipient(&recipient);
+    assert_eq!(recipient_shares.len(), 1);
+}
+
+#[test]
+#[should_panic]
+fn test_get_nonexistent_credential_share_panics() {
+    let (_, _, _, _, sharing, _) = setup();
+    sharing.get_credential_share(&999);
+}
+
+#[test]
+#[should_panic]
+fn test_revoke_nonexistent_credential_share_panics() {
+    let (env, _, _, _, sharing, _) = setup();
+    let reason = soroban_sdk::String::from_str(&env, "test");
+    sharing.revoke_credential_share(&999, &reason);
+}
