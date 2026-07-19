@@ -36,3 +36,24 @@ describe("Comparators Circuit Tests", function() {
     
     describe("IsEqual", () => {
         let circuit;
+        
+        before(async () => {
+            circuit = await wasm_tester(
+                path.join(__dirname, "../../circuits/utils/comparators.circom"),
+                { output: path.join(__dirname, "../../build") }
+            );
+        });
+        
+        it("should return 1 when inputs are equal", async () => {
+            const input = { in: [42, 42] };
+            const witness = await circuit.calculateWitness(input);
+            await circuit.assertOut(witness, { out: 1 });
+        });
+        
+        it("should return 0 when inputs are not equal", async () => {
+            const input = { in: [42, 43] };
+            const witness = await circuit.calculateWitness(input);
+            await circuit.assertOut(witness, { out: 0 });
+        });
+    });
+});
