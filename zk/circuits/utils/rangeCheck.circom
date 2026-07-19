@@ -18,3 +18,24 @@ template RangeCheck() {
     rangeChecker.max <== max;
     
     isValid <== rangeChecker.out;
+}
+
+// Multi-condition range check
+// Validates multiple ranges simultaneously
+template MultiRangeCheck(numRanges) {
+    signal input values[numRanges];
+    signal input mins[numRanges];
+    signal input maxs[numRanges];
+    signal output isValid;
+    
+    component rangeChecks[numRanges];
+    signal results[numRanges];
+    
+    for (var i = 0; i < numRanges; i++) {
+        rangeChecks[i] = RangeCheck();
+        rangeChecks[i].value <== values[i];
+        rangeChecks[i].min <== mins[i];
+        rangeChecks[i].max <== maxs[i];
+        results[i] <== rangeChecks[i].isValid;
+    }
+    
