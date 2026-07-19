@@ -18,3 +18,23 @@ template MerkleTreeChecker(levels) {
     // Output
     signal output isValid;
     
+    // Compute the merkle root from leaf and path
+    component hashers[levels];
+    component mux[levels];
+    
+    signal hashes[levels + 1];
+    hashes[0] <== leaf;
+    
+    for (var i = 0; i < levels; i++) {
+        // Select left or right based on pathIndices
+        pathIndices[i] * (1 - pathIndices[i]) === 0;
+        
+        hashers[i] = Poseidon2();
+        
+        // If pathIndices[i] == 0, current hash is left child
+        // If pathIndices[i] == 1, current hash is right child
+        hashers[i].in[0] <== (1 - pathIndices[i]) * hashes[i] + pathIndices[i] * pathElements[i];
+        hashers[i].in[1] <== pathIndices[i] * hashes[i] + (1 - pathIndices[i]) * pathElements[i];
+        
+        hashes[i + 1] <== hashers[i].out;
+    }
