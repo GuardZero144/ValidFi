@@ -17,3 +17,22 @@ describe("Comparators Circuit Tests", function() {
         
         it("should return 1 when first input is less than second", async () => {
             const input = { in: [5, 10] };
+            const witness = await circuit.calculateWitness(input);
+            await circuit.assertOut(witness, { out: 1 });
+        });
+        
+        it("should return 0 when first input equals second", async () => {
+            const input = { in: [10, 10] };
+            const witness = await circuit.calculateWitness(input);
+            await circuit.assertOut(witness, { out: 0 });
+        });
+        
+        it("should return 0 when first input is greater than second", async () => {
+            const input = { in: [15, 10] };
+            const witness = await circuit.calculateWitness(input);
+            await circuit.assertOut(witness, { out: 0 });
+        });
+    });
+    
+    describe("IsEqual", () => {
+        let circuit;
