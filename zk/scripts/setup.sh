@@ -41,3 +41,19 @@ setup_circuit() {
     
     # Export verification key
     snarkjs zkey export verificationkey \
+        $BUILD_DIR/${circuit_name}_final.zkey \
+        $BUILD_DIR/${circuit_name}_verification_key.json
+    
+    echo "$circuit_name setup complete!"
+}
+
+# Setup all circuits
+echo ""
+echo "Running trusted setup for all circuits..."
+
+# Note: Only setup main circuits, not utility templates
+setup_circuit "MerkleTreeChecker"
+
+echo ""
+echo "All setups complete!"
+echo "Verification keys available in $BUILD_DIR/"
