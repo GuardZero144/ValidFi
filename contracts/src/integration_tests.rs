@@ -826,3 +826,138 @@ fn test_extend_nonexistent_share_panics() {
     let (_, _, _, _, sharing, _) = setup();
     sharing.extend_share(&999, &3600);
 }
+
+// ── Credential Sharing Integration ──────────────────────────────────────────
+
+#[test]
+fn test_share_credential_and_retrieve() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[5u8; 32]);
+    let enc_key = Bytes::from_array(&env, &[20u8; 16]);
+
+    let share_id = sharing.share_credential(
+        &owner, &recipient, &cred_hash, &enc_key,
+        &crate::types::SharingPermission::View, &86400,
+    );
+
+    let result = sharing.get_credential_share(&share_id);
+    assert_eq!(result.owner, owner);
+    assert_eq!(result.recipient, recipient);
+    assert_eq!(result.permission, crate::types::SharingPermission::View);
+    assert!(result.is_active);
+}
+
+#[test]
+fn test_check_credential_access_active() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[6u8; 32]);
+
+    sharing.share_credential(
+        &owner, &recipient, &cred_hash,
+        &Bytes::from_array(&env, &[30u8; 16]),
+        &crate::types::SharingPermission::Download, &86400,
+    );
+
+    assert!(sharing.check_credential_access(&recipient, &cred_hash));
+}
+
+#[test]
+fn test_check_credential_access_denied_for_unknown() {
+    let (env, _, _, _, sharing, _) = setup();
+    let unknown = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[7u8; 32]);
+    assert!(!sharing.check_credential_access(&unknown, &cred_hash));
+}
+
+#[test]
+fn test_revoke_credential_share() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[8u8; 32]);
+
+    let share_id = sharing.share_credential(
+        &owner, &recipient, &cred_hash,
+        &Bytes::from_array(&env, &[40u8; 16]),
+        &crate::types::SharingPermission::Download, &86400,
+    );
+
+    assert!(sharing.check_credential_access(&recipient, &cred_hash));
+
+    let reason = soroban_sdk::String::from_str(&env, "compromised");
+    sharing.revoke_credential_share(&share_id, &reason);
+
+    assert!(!sharing.check_credential_access(&recipient, &cred_hash));
+    let share = sharing.get_credential_share(&share_id);
+    assert!(!share.is_active);
+}
+
+#[test]
+fn test_extend_credential_share() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[9u8; 32]);
+    let start_ts = env.ledger().timestamp();
+
+    let share_id = sharing.share_credential(
+        &owner, &recipient, &cred_hash,
+        &Bytes::from_array(&env, &[50u8; 16]),
+        &crate::types::SharingPermission::View, &100,
+    );
+
+    sharing.extend_credential_share(&share_id, &200);
+
+    env.ledger().set_timestamp(start_ts + 150);
+    assert!(sharing.check_credential_access(&recipient, &cred_hash));
+
+    env.ledger().set_timestamp(start_ts + 350);
+    assert!(!sharing.check_credential_access(&recipient, &cred_hash));
+}
+
+#[test]
+fn test_share_credential_expires() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[10u8; 32]);
+    let start_ts = env.ledger().timestamp();
+
+    sharing.share_credential(
+        &owner, &recipient, &cred_hash,
+        &Bytes::from_array(&env, &[60u8; 16]),
+        &crate::types::SharingPermission::View, &100,
+    );
+
+    assert!(sharing.check_credential_access(&recipient, &cred_hash));
+    env.ledger().set_timestamp(start_ts + 200);
+    assert!(!sharing.check_credential_access(&recipient, &cred_hash));
+}
+
+#[test]
+fn test_re_share_credential() {
+    let (env, _, _, _, sharing, _) = setup();
+    let owner = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let third_party = Address::generate(&env);
+    let cred_hash = BytesN::from_array(&env, &[11u8; 32]);
+
+    let share_id = sharing.share_credential(
+        &owner, &recipient, &cred_hash,
+        &Bytes::from_array(&env, &[70u8; 16]),
+        &crate::types::SharingPermission::ReShare, &86400,
+    );
+
+    let new_share_id = sharing.re_share_credential(
+        &share_id, &third_party,
+        &crate::types::SharingPermission::View, &3600,
+    );
+
+    assert!(sharing.check_credential_access(&third_party, &cred_hash));
+    let new_share = sharing.get_credential_share(&new_share_id);
+    assert_eq!(new_share.permission, crate::types::SharingPermission::View);
+}
