@@ -60,3 +60,24 @@ template IsZero() {
     
     inv <-- in != 0 ? 1 / in : 0;
     out <== -in * inv + 1;
+    in * out === 0;
+}
+
+// Checks if value is within range [min, max] inclusive
+// Returns 1 if true, 0 if false
+template InRange(n) {
+    signal input value;
+    signal input min;
+    signal input max;
+    signal output out;
+    
+    component gte = LessEqThan(n);
+    gte.in[0] <== min;
+    gte.in[1] <== value;
+    
+    component lte = LessEqThan(n);
+    lte.in[0] <== value;
+    lte.in[1] <== max;
+    
+    out <== gte.out * lte.out;
+}
