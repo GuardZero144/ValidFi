@@ -137,6 +137,56 @@ impl DataSharing {
             .set(&(share_id, "shared_data"), &shared_data);
         Ok(())
     }
+
+    pub fn share_credential(
+        env: &Env,
+        owner: Address,
+        recipient: Address,
+        credential_hash: BytesN<32>,
+        encrypted_key: Bytes,
+        permission: SharingPermission,
+        duration_seconds: u64,
+    ) -> u64 {
+        owner.require_auth();
+
+        let share_id = env
+            .storage()
+            .instance()
+            .get::<_, u64>(&SharingDataKey::ShareCounter)
+            .unwrap_or(0u64)
+            + 1;
+
+        let now = env.ledger().timestamp();
+        let share = CredentialShare {
+            owner: owner.clone(),
+            recipient: recipient.clone(),
+            credential_hash: credential_hash.clone(),
+            encrypted_key,
+            permission: permission.clone(),
+            access_expiry: now + duration_seconds,
+            is_active: true,
+            shared_at: now,
+            revoked_at: 0,
+            revocation_reason: String::from_str(&env, ""),
+        };
+
+        env.storage()
+            .instance()
+            .set(&SharingDataKey::ShareCounter, &share_id);
+        write_credential_share(&env, share_id, &share);
+
+        let event = CredentialShareEvent {
+            share_id,
+            owner: owner.clone(),
+            recipient,
+            permission,
+            action: Symbol::new(&env, "shared"),
+            timestamp: now,
+        };
+        crate::events::emit_credential_share_event(&env, owner, event);
+
+        share_id
+    }
 }
 
 fn read_credential_share(env: &Env, share_id: u64) -> Result<CredentialShare, Error> {
