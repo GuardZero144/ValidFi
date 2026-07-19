@@ -18,3 +18,23 @@ describe("MerkleTree Circuit Tests", function() {
     
     function hash(left, right) {
         return poseidon.F.toString(poseidon([left, right]));
+    }
+    
+    it("should verify valid merkle proof for depth 3", async () => {
+        // Build a simple merkle tree of depth 3
+        const leaf = 1;
+        const sibling1 = 2;
+        const sibling2 = 3;
+        const sibling3 = 4;
+        
+        // Calculate merkle path (leaf is leftmost)
+        const level1 = hash(leaf, sibling1);
+        const level2 = hash(level1, sibling2);
+        const root = hash(level2, sibling3);
+        
+        const input = {
+            root: root,
+            leaf: leaf,
+            pathElements: [sibling1, sibling2, sibling3],
+            pathIndices: [0, 0, 0]
+        };
