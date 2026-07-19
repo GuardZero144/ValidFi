@@ -8,8 +8,8 @@ pub enum AuditDataKey {
 
 #[contracttype]
 pub enum SharingDataKey {
-    ShareCounter,
-    ShareRecord(u64),
-    ShareByOwner(Address),
-    ShareByRecipient(Address),
+    Counter,
+    Record(u64),
+    ByOwner(Address),
+    ByRecipient(Address),
 }

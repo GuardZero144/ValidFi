@@ -154,7 +154,7 @@ impl DataSharing {
         let share_id = env
             .storage()
             .instance()
-            .get::<_, u64>(&SharingDataKey::ShareCounter)
+            .get::<_, u64>(&SharingDataKey::Counter)
             .unwrap_or(0u64)
             + 1;
 
@@ -169,32 +169,32 @@ impl DataSharing {
             is_active: true,
             shared_at: now,
             revoked_at: 0,
-            revocation_reason: String::from_str(&env, ""),
+            revocation_reason: String::from_str(env, ""),
         };
 
         env.storage()
             .instance()
-            .set(&SharingDataKey::ShareCounter, &share_id);
-        write_credential_share(&env, share_id, &share);
+            .set(&SharingDataKey::Counter, &share_id);
+        write_credential_share(env, share_id, &share);
 
         let mut owner_shares: Vec<u64> = env
             .storage()
             .persistent()
-            .get(&SharingDataKey::ShareByOwner(owner.clone()))
-            .unwrap_or(Vec::new(&env));
+            .get(&SharingDataKey::ByOwner(owner.clone()))
+            .unwrap_or(Vec::new(env));
         owner_shares.push_back(share_id);
         env.storage()
             .persistent()
-            .set(&SharingDataKey::ShareByOwner(owner.clone()), &owner_shares);
+            .set(&SharingDataKey::ByOwner(owner.clone()), &owner_shares);
 
         let mut recipient_shares: Vec<u64> = env
             .storage()
             .persistent()
-            .get(&SharingDataKey::ShareByRecipient(recipient.clone()))
-            .unwrap_or(Vec::new(&env));
+            .get(&SharingDataKey::ByRecipient(recipient.clone()))
+            .unwrap_or(Vec::new(env));
         recipient_shares.push_back(share_id);
         env.storage().persistent().set(
-            &SharingDataKey::ShareByRecipient(recipient.clone()),
+            &SharingDataKey::ByRecipient(recipient.clone()),
             &recipient_shares,
         );
 
@@ -203,10 +203,10 @@ impl DataSharing {
             owner: owner.clone(),
             recipient,
             permission,
-            action: Symbol::new(&env, "shared"),
+            action: Symbol::new(env, "shared"),
             timestamp: now,
         };
-        crate::events::emit_credential_share_event(&env, owner, event);
+        crate::events::emit_credential_share_event(env, owner, event);
 
         share_id
     }
@@ -219,12 +219,12 @@ impl DataSharing {
         let shares: Vec<u64> = env
             .storage()
             .persistent()
-            .get(&SharingDataKey::ShareByRecipient(grantee))
-            .unwrap_or(Vec::new(&env));
+            .get(&SharingDataKey::ByRecipient(grantee))
+            .unwrap_or(Vec::new(env));
 
         for i in 0..shares.len() {
             if let Some(share_id) = shares.get(i) {
-                if let Ok(share) = read_credential_share(&env, share_id) {
+                if let Ok(share) = read_credential_share(env, share_id) {
                     if share.credential_hash == credential_hash
                         && share.is_active
                         && env.ledger().timestamp() <= share.access_expiry
@@ -238,42 +238,42 @@ impl DataSharing {
     }
 
     pub fn get_credential_share(env: &Env, share_id: u64) -> Result<CredentialShare, Error> {
-        read_credential_share(&env, share_id)
+        read_credential_share(env, share_id)
     }
 
     pub fn get_shares_by_owner(env: &Env, owner: Address) -> Vec<u64> {
         env.storage()
             .persistent()
-            .get(&SharingDataKey::ShareByOwner(owner))
-            .unwrap_or(Vec::new(&env))
+            .get(&SharingDataKey::ByOwner(owner))
+            .unwrap_or(Vec::new(env))
     }
 
     pub fn get_shares_by_recipient(env: &Env, recipient: Address) -> Vec<u64> {
         env.storage()
             .persistent()
-            .get(&SharingDataKey::ShareByRecipient(recipient))
-            .unwrap_or(Vec::new(&env))
+            .get(&SharingDataKey::ByRecipient(recipient))
+            .unwrap_or(Vec::new(env))
     }
 
     pub fn revoke_credential_share(env: &Env, share_id: u64, reason: String) -> Result<(), Error> {
-        let mut share = read_credential_share(&env, share_id)?;
+        let mut share = read_credential_share(env, share_id)?;
         share.owner.require_auth();
 
         share.is_active = false;
         share.revoked_at = env.ledger().timestamp();
         share.revocation_reason = reason.clone();
 
-        write_credential_share(&env, share_id, &share);
+        write_credential_share(env, share_id, &share);
 
         let event = CredentialShareEvent {
             share_id,
             owner: share.owner.clone(),
             recipient: share.recipient,
             permission: share.permission,
-            action: Symbol::new(&env, "revoked"),
+            action: Symbol::new(env, "revoked"),
             timestamp: env.ledger().timestamp(),
         };
-        crate::events::emit_credential_share_event(&env, share.owner, event);
+        crate::events::emit_credential_share_event(env, share.owner, event);
 
         Ok(())
     }
@@ -283,21 +283,21 @@ impl DataSharing {
         share_id: u64,
         additional_seconds: u64,
     ) -> Result<(), Error> {
-        let mut share = read_credential_share(&env, share_id)?;
+        let mut share = read_credential_share(env, share_id)?;
         share.owner.require_auth();
 
         share.access_expiry += additional_seconds;
-        write_credential_share(&env, share_id, &share);
+        write_credential_share(env, share_id, &share);
 
         let event = CredentialShareEvent {
             share_id,
             owner: share.owner.clone(),
             recipient: share.recipient,
             permission: share.permission,
-            action: Symbol::new(&env, "extended"),
+            action: Symbol::new(env, "extended"),
             timestamp: env.ledger().timestamp(),
         };
-        crate::events::emit_credential_share_event(&env, share.owner, event);
+        crate::events::emit_credential_share_event(env, share.owner, event);
 
         Ok(())
     }
@@ -309,7 +309,7 @@ impl DataSharing {
         new_permission: SharingPermission,
         duration_seconds: u64,
     ) -> Result<u64, Error> {
-        let share = read_credential_share(&env, share_id)?;
+        let share = read_credential_share(env, share_id)?;
 
         if !share.is_active || env.ledger().timestamp() > share.access_expiry {
             return Err(Error::ShareExpired);
@@ -331,40 +331,40 @@ impl DataSharing {
             is_active: true,
             shared_at: now,
             revoked_at: 0,
-            revocation_reason: String::from_str(&env, ""),
+            revocation_reason: String::from_str(env, ""),
         };
 
         let new_share_id = env
             .storage()
             .instance()
-            .get::<_, u64>(&SharingDataKey::ShareCounter)
+            .get::<_, u64>(&SharingDataKey::Counter)
             .unwrap_or(0u64)
             + 1;
 
         env.storage()
             .instance()
-            .set(&SharingDataKey::ShareCounter, &new_share_id);
-        write_credential_share(&env, new_share_id, &new_share);
+            .set(&SharingDataKey::Counter, &new_share_id);
+        write_credential_share(env, new_share_id, &new_share);
 
         let mut owner_shares: Vec<u64> = env
             .storage()
             .persistent()
-            .get(&SharingDataKey::ShareByOwner(new_share.owner.clone()))
-            .unwrap_or(Vec::new(&env));
+            .get(&SharingDataKey::ByOwner(new_share.owner.clone()))
+            .unwrap_or(Vec::new(env));
         owner_shares.push_back(new_share_id);
         env.storage().persistent().set(
-            &SharingDataKey::ShareByOwner(new_share.owner.clone()),
+            &SharingDataKey::ByOwner(new_share.owner.clone()),
             &owner_shares,
         );
 
         let mut recipient_shares: Vec<u64> = env
             .storage()
             .persistent()
-            .get(&SharingDataKey::ShareByRecipient(new_recipient.clone()))
-            .unwrap_or(Vec::new(&env));
+            .get(&SharingDataKey::ByRecipient(new_recipient.clone()))
+            .unwrap_or(Vec::new(env));
         recipient_shares.push_back(new_share_id);
         env.storage().persistent().set(
-            &SharingDataKey::ShareByRecipient(new_recipient.clone()),
+            &SharingDataKey::ByRecipient(new_recipient.clone()),
             &recipient_shares,
         );
 
@@ -373,17 +373,17 @@ impl DataSharing {
             owner: new_share.owner.clone(),
             recipient: new_recipient,
             permission: new_permission,
-            action: Symbol::new(&env, "re_shared"),
+            action: Symbol::new(env, "re_shared"),
             timestamp: now,
         };
-        crate::events::emit_credential_share_event(&env, new_share.owner, event);
+        crate::events::emit_credential_share_event(env, new_share.owner, event);
 
         Ok(new_share_id)
     }
 }
 
 fn read_credential_share(env: &Env, share_id: u64) -> Result<CredentialShare, Error> {
-    let key = SharingDataKey::ShareRecord(share_id);
+    let key = SharingDataKey::Record(share_id);
     let share: CredentialShare = env
         .storage()
         .persistent()
@@ -396,7 +396,7 @@ fn read_credential_share(env: &Env, share_id: u64) -> Result<CredentialShare, Er
 }
 
 fn write_credential_share(env: &Env, share_id: u64, share: &CredentialShare) {
-    let key = SharingDataKey::ShareRecord(share_id);
+    let key = SharingDataKey::Record(share_id);
     env.storage().persistent().set(&key, share);
     env.storage()
         .persistent()
