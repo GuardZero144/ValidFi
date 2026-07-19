@@ -39,3 +39,13 @@ template MultiRangeCheck(numRanges) {
         results[i] <== rangeChecks[i].isValid;
     }
     
+    // Multiply all results (AND logic)
+    signal accumulator[numRanges];
+    accumulator[0] <== results[0];
+    
+    for (var i = 1; i < numRanges; i++) {
+        accumulator[i] <== accumulator[i-1] * results[i];
+    }
+    
+    isValid <== accumulator[numRanges - 1];
+}
