@@ -25,3 +25,30 @@ VaccinationProof (Phase 2-3)
 ### 1. Utility Circuits (`circuits/utils/`)
 
 #### comparators.circom
+
+**Purpose**: Basic comparison operations for zero-knowledge circuits
+
+**Templates**:
+- `LessThan(n)` - Checks if `in[0] < in[1]` for n-bit numbers
+- `LessEqThan(n)` - Checks if `in[0] <= in[1]`
+- `IsEqual()` - Checks if `in[0] == in[1]`
+- `InRange(n)` - Checks if value is within [min, max]
+- `Num2Bits(n)` - Converts number to binary representation
+- `IsZero()` - Checks if input is zero
+
+**Constraint Cost**: ~n constraints per comparison
+
+
+#### rangeCheck.circom
+
+**Purpose**: Optimized range validation for date/timestamp verification
+
+**Templates**:
+- `RangeCheck()` - Validates single value in range (64-bit optimized)
+- `MultiRangeCheck(numRanges)` - Validates multiple ranges with AND logic
+
+**Constraint Cost**: ~64 constraints per range check
+
+**Use Cases**:
+- Vaccination date validation
+- Expiry date checking
