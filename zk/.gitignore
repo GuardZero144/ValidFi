@@ -1,0 +1,43 @@
+# Build artifacts
+build/
+*.r1cs
+*.wasm
+*.wtns
+*.zkey
+*.sym
+*_js/
+
+# Powers of tau
+*.ptau
+
+# Proofs and witnesses
+proof.json
+public.json
+witness.wtns
+
+# Node modules
+node_modules/
+package-lock.json
+yarn.lock
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Benchmark reports
+benchmark-report.json
