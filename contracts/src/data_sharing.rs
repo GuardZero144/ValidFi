@@ -187,6 +187,50 @@ impl DataSharing {
 
         share_id
     }
+
+    pub fn check_credential_access(
+        env: &Env,
+        grantee: Address,
+        credential_hash: BytesN<32>,
+    ) -> bool {
+        let shares: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&SharingDataKey::ShareByRecipient(grantee))
+            .unwrap_or(Vec::new(&env));
+
+        for i in 0..shares.len() {
+            if let Some(share_id) = shares.get(i) {
+                if let Ok(share) = read_credential_share(&env, share_id) {
+                    if share.credential_hash == credential_hash
+                        && share.is_active
+                        && env.ledger().timestamp() <= share.access_expiry
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub fn get_credential_share(env: &Env, share_id: u64) -> Result<CredentialShare, Error> {
+        read_credential_share(&env, share_id)
+    }
+
+    pub fn get_shares_by_owner(env: &Env, owner: Address) -> Vec<u64> {
+        env.storage()
+            .persistent()
+            .get(&SharingDataKey::ShareByOwner(owner))
+            .unwrap_or(Vec::new(&env))
+    }
+
+    pub fn get_shares_by_recipient(env: &Env, recipient: Address) -> Vec<u64> {
+        env.storage()
+            .persistent()
+            .get(&SharingDataKey::ShareByRecipient(recipient))
+            .unwrap_or(Vec::new(&env))
+    }
 }
 
 fn read_credential_share(env: &Env, share_id: u64) -> Result<CredentialShare, Error> {
