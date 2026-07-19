@@ -1,4 +1,6 @@
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Bytes, BytesN, Env, String, Symbol, Vec};
+use soroban_sdk::{
+    contract, contractimpl, contracttype, Address, Bytes, BytesN, Env, String, Symbol, Vec,
+};
 
 use crate::errors::Error;
 use crate::storage::SharingDataKey;
@@ -191,9 +193,10 @@ impl DataSharing {
             .get(&SharingDataKey::ShareByRecipient(recipient.clone()))
             .unwrap_or(Vec::new(&env));
         recipient_shares.push_back(share_id);
-        env.storage()
-            .persistent()
-            .set(&SharingDataKey::ShareByRecipient(recipient.clone()), &recipient_shares);
+        env.storage().persistent().set(
+            &SharingDataKey::ShareByRecipient(recipient.clone()),
+            &recipient_shares,
+        );
 
         let event = CredentialShareEvent {
             share_id,
@@ -252,11 +255,7 @@ impl DataSharing {
             .unwrap_or(Vec::new(&env))
     }
 
-    pub fn revoke_credential_share(
-        env: &Env,
-        share_id: u64,
-        reason: String,
-    ) -> Result<(), Error> {
+    pub fn revoke_credential_share(env: &Env, share_id: u64, reason: String) -> Result<(), Error> {
         let mut share = read_credential_share(&env, share_id)?;
         share.owner.require_auth();
 
@@ -353,9 +352,10 @@ impl DataSharing {
             .get(&SharingDataKey::ShareByOwner(new_share.owner.clone()))
             .unwrap_or(Vec::new(&env));
         owner_shares.push_back(new_share_id);
-        env.storage()
-            .persistent()
-            .set(&SharingDataKey::ShareByOwner(new_share.owner.clone()), &owner_shares);
+        env.storage().persistent().set(
+            &SharingDataKey::ShareByOwner(new_share.owner.clone()),
+            &owner_shares,
+        );
 
         let mut recipient_shares: Vec<u64> = env
             .storage()
@@ -363,9 +363,10 @@ impl DataSharing {
             .get(&SharingDataKey::ShareByRecipient(new_recipient.clone()))
             .unwrap_or(Vec::new(&env));
         recipient_shares.push_back(new_share_id);
-        env.storage()
-            .persistent()
-            .set(&SharingDataKey::ShareByRecipient(new_recipient.clone()), &recipient_shares);
+        env.storage().persistent().set(
+            &SharingDataKey::ShareByRecipient(new_recipient.clone()),
+            &recipient_shares,
+        );
 
         let event = CredentialShareEvent {
             share_id: new_share_id,
@@ -388,12 +389,16 @@ fn read_credential_share(env: &Env, share_id: u64) -> Result<CredentialShare, Er
         .persistent()
         .get(&key)
         .ok_or(Error::SharedDocumentNotFound)?;
-    env.storage().persistent().extend_ttl(&key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND);
     Ok(share)
 }
 
 fn write_credential_share(env: &Env, share_id: u64, share: &CredentialShare) {
     let key = SharingDataKey::ShareRecord(share_id);
     env.storage().persistent().set(&key, share);
-    env.storage().persistent().extend_ttl(&key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND);
 }

@@ -838,8 +838,12 @@ fn test_share_credential_and_retrieve() {
     let enc_key = Bytes::from_array(&env, &[20u8; 16]);
 
     let share_id = sharing.share_credential(
-        &owner, &recipient, &cred_hash, &enc_key,
-        &crate::types::SharingPermission::View, &86400,
+        &owner,
+        &recipient,
+        &cred_hash,
+        &enc_key,
+        &crate::types::SharingPermission::View,
+        &86400,
     );
 
     let result = sharing.get_credential_share(&share_id);
@@ -857,9 +861,12 @@ fn test_check_credential_access_active() {
     let cred_hash = BytesN::from_array(&env, &[6u8; 32]);
 
     sharing.share_credential(
-        &owner, &recipient, &cred_hash,
+        &owner,
+        &recipient,
+        &cred_hash,
         &Bytes::from_array(&env, &[30u8; 16]),
-        &crate::types::SharingPermission::Download, &86400,
+        &crate::types::SharingPermission::Download,
+        &86400,
     );
 
     assert!(sharing.check_credential_access(&recipient, &cred_hash));
@@ -881,9 +888,12 @@ fn test_revoke_credential_share() {
     let cred_hash = BytesN::from_array(&env, &[8u8; 32]);
 
     let share_id = sharing.share_credential(
-        &owner, &recipient, &cred_hash,
+        &owner,
+        &recipient,
+        &cred_hash,
         &Bytes::from_array(&env, &[40u8; 16]),
-        &crate::types::SharingPermission::Download, &86400,
+        &crate::types::SharingPermission::Download,
+        &86400,
     );
 
     assert!(sharing.check_credential_access(&recipient, &cred_hash));
@@ -905,9 +915,12 @@ fn test_extend_credential_share() {
     let start_ts = env.ledger().timestamp();
 
     let share_id = sharing.share_credential(
-        &owner, &recipient, &cred_hash,
+        &owner,
+        &recipient,
+        &cred_hash,
         &Bytes::from_array(&env, &[50u8; 16]),
-        &crate::types::SharingPermission::View, &100,
+        &crate::types::SharingPermission::View,
+        &100,
     );
 
     sharing.extend_credential_share(&share_id, &200);
@@ -928,9 +941,12 @@ fn test_share_credential_expires() {
     let start_ts = env.ledger().timestamp();
 
     sharing.share_credential(
-        &owner, &recipient, &cred_hash,
+        &owner,
+        &recipient,
+        &cred_hash,
         &Bytes::from_array(&env, &[60u8; 16]),
-        &crate::types::SharingPermission::View, &100,
+        &crate::types::SharingPermission::View,
+        &100,
     );
 
     assert!(sharing.check_credential_access(&recipient, &cred_hash));
@@ -947,14 +963,19 @@ fn test_re_share_credential() {
     let cred_hash = BytesN::from_array(&env, &[11u8; 32]);
 
     let share_id = sharing.share_credential(
-        &owner, &recipient, &cred_hash,
+        &owner,
+        &recipient,
+        &cred_hash,
         &Bytes::from_array(&env, &[70u8; 16]),
-        &crate::types::SharingPermission::ReShare, &86400,
+        &crate::types::SharingPermission::ReShare,
+        &86400,
     );
 
     let new_share_id = sharing.re_share_credential(
-        &share_id, &third_party,
-        &crate::types::SharingPermission::View, &3600,
+        &share_id,
+        &third_party,
+        &crate::types::SharingPermission::View,
+        &3600,
     );
 
     assert!(sharing.check_credential_access(&third_party, &cred_hash));
@@ -971,14 +992,19 @@ fn test_re_share_denied_without_permission() {
     let cred_hash = BytesN::from_array(&env, &[12u8; 32]);
 
     let share_id = sharing.share_credential(
-        &owner, &recipient, &cred_hash,
+        &owner,
+        &recipient,
+        &cred_hash,
         &Bytes::from_array(&env, &[80u8; 16]),
-        &crate::types::SharingPermission::View, &86400,
+        &crate::types::SharingPermission::View,
+        &86400,
     );
 
     let res = sharing.try_re_share_credential(
-        &share_id, &third_party,
-        &crate::types::SharingPermission::View, &3600,
+        &share_id,
+        &third_party,
+        &crate::types::SharingPermission::View,
+        &3600,
     );
     assert!(res.is_err());
 }
@@ -992,9 +1018,12 @@ fn test_revoke_expired_share() {
     let start_ts = env.ledger().timestamp();
 
     let share_id = sharing.share_credential(
-        &owner, &recipient, &cred_hash,
+        &owner,
+        &recipient,
+        &cred_hash,
         &Bytes::from_array(&env, &[90u8; 16]),
-        &crate::types::SharingPermission::Download, &100,
+        &crate::types::SharingPermission::Download,
+        &100,
     );
 
     env.ledger().set_timestamp(start_ts + 200);
@@ -1014,9 +1043,12 @@ fn test_get_shares_by_owner_and_recipient() {
     let cred_hash = BytesN::from_array(&env, &[14u8; 32]);
 
     sharing.share_credential(
-        &owner, &recipient, &cred_hash,
+        &owner,
+        &recipient,
+        &cred_hash,
         &Bytes::from_array(&env, &[100u8; 16]),
-        &crate::types::SharingPermission::View, &86400,
+        &crate::types::SharingPermission::View,
+        &86400,
     );
 
     let owner_shares = sharing.get_shares_by_owner(&owner);
