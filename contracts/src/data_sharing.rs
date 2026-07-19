@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Bytes, BytesN, Env, String, Symbol, Vec};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Bytes, BytesN, Env, String, Symbol, Vec};
 
 use crate::errors::Error;
 use crate::storage::SharingDataKey;
@@ -175,6 +175,26 @@ impl DataSharing {
             .set(&SharingDataKey::ShareCounter, &share_id);
         write_credential_share(&env, share_id, &share);
 
+        let mut owner_shares: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&SharingDataKey::ShareByOwner(owner.clone()))
+            .unwrap_or(Vec::new(&env));
+        owner_shares.push_back(share_id);
+        env.storage()
+            .persistent()
+            .set(&SharingDataKey::ShareByOwner(owner.clone()), &owner_shares);
+
+        let mut recipient_shares: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&SharingDataKey::ShareByRecipient(recipient.clone()))
+            .unwrap_or(Vec::new(&env));
+        recipient_shares.push_back(share_id);
+        env.storage()
+            .persistent()
+            .set(&SharingDataKey::ShareByRecipient(recipient.clone()), &recipient_shares);
+
         let event = CredentialShareEvent {
             share_id,
             owner: owner.clone(),
@@ -326,6 +346,26 @@ impl DataSharing {
             .instance()
             .set(&SharingDataKey::ShareCounter, &new_share_id);
         write_credential_share(&env, new_share_id, &new_share);
+
+        let mut owner_shares: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&SharingDataKey::ShareByOwner(new_share.owner.clone()))
+            .unwrap_or(Vec::new(&env));
+        owner_shares.push_back(new_share_id);
+        env.storage()
+            .persistent()
+            .set(&SharingDataKey::ShareByOwner(new_share.owner.clone()), &owner_shares);
+
+        let mut recipient_shares: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&SharingDataKey::ShareByRecipient(new_recipient.clone()))
+            .unwrap_or(Vec::new(&env));
+        recipient_shares.push_back(new_share_id);
+        env.storage()
+            .persistent()
+            .set(&SharingDataKey::ShareByRecipient(new_recipient.clone()), &recipient_shares);
 
         let event = CredentialShareEvent {
             share_id: new_share_id,
