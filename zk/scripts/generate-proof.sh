@@ -41,3 +41,11 @@ snarkjs groth16 prove \
     $BUILD_DIR/${CIRCUIT_NAME}_final.zkey \
     $BUILD_DIR/witness.wtns \
     $BUILD_DIR/proof.json \
+    $BUILD_DIR/public.json
+
+echo ""
+echo "Proof generation complete!"
+echo "  Proof: $BUILD_DIR/proof.json"
+echo "  Public signals: $BUILD_DIR/public.json"
+echo ""
+echo "Proof size: $(wc -c < $BUILD_DIR/proof.json) bytes"
