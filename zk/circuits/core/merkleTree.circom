@@ -38,3 +38,12 @@ template MerkleTreeChecker(levels) {
         
         hashes[i + 1] <== hashers[i].out;
     }
+
+    
+    // Verify computed root matches the expected root
+    component rootCheck = IsEqual();
+    rootCheck.in[0] <== hashes[levels];
+    rootCheck.in[1] <== root;
+    
+    isValid <== rootCheck.out;
+}
