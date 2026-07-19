@@ -26,4 +26,8 @@ pub enum Error {
     IssuerNotAuthorized = 18,
     CredentialRevoked = 19,
     CredentialNotFound = 20,
+    // Credential sharing errors
+    PermissionDenied = 21,
+    ShareExpired = 22,
+    CannotReShare = 23,
 }
