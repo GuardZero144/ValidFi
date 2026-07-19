@@ -37,7 +37,9 @@ yarn-error.log*
 
 # Rust
 contracts/target/
-Cargo.lock
+# Cargo.lock - Note: contracts/Cargo.lock is tracked for reproducible builds
+*.lock
+!contracts/Cargo.lock
 
 # Benchmark test snapshots are large generated artifacts (load tests create
 # hundreds of ledger entries) — not worth tracking. Integration-test snapshots

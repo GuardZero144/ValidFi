@@ -2,15 +2,18 @@
 name = "securedata-contracts"
 version = "0.1.0"
 edition = "2021"
+resolver = "2"
 
 [features]
 testutils = ["soroban-sdk/testutils"]
 
 [dependencies]
-soroban-sdk = "21.0.0"
+soroban-sdk = "21.7.7"
+# Explicitly pin ed25519-dalek to v2 for compatibility
+ed25519-dalek = "=2.2.0"
 
 [dev-dependencies]
-soroban-sdk = { version = "21.0.0", features = ["testutils"] }
+soroban-sdk = { version = "21.7.7", features = ["testutils"] }
 
 [profile.release]
 opt-level = "z"
