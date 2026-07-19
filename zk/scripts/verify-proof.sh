@@ -42,3 +42,5 @@ if [ $? -eq 0 ]; then
 else
     echo ""
     echo "✗ Proof is INVALID"
+    exit 1
+fi
