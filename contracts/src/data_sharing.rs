@@ -1,6 +1,8 @@
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Bytes, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Bytes, BytesN, Env, String, Symbol, Vec};
 
 use crate::errors::Error;
+use crate::storage::SharingDataKey;
+use crate::types::{CredentialShareEvent, SharingPermission};
 
 #[contracttype]
 #[derive(Clone)]
@@ -13,6 +15,24 @@ pub struct SharedData {
     pub is_active: bool,
     pub shared_at: u64,
 }
+
+#[contracttype]
+#[derive(Clone)]
+pub struct CredentialShare {
+    pub owner: Address,
+    pub recipient: Address,
+    pub credential_hash: BytesN<32>,
+    pub encrypted_key: Bytes,
+    pub permission: SharingPermission,
+    pub access_expiry: u64,
+    pub is_active: bool,
+    pub shared_at: u64,
+    pub revoked_at: u64,
+    pub revocation_reason: String,
+}
+
+const PERSISTENT_TTL_THRESHOLD: u32 = 17_280;
+const PERSISTENT_TTL_EXTEND: u32 = 535_680;
 
 #[contract]
 pub struct DataSharing;
@@ -117,4 +137,21 @@ impl DataSharing {
             .set(&(share_id, "shared_data"), &shared_data);
         Ok(())
     }
+}
+
+fn read_credential_share(env: &Env, share_id: u64) -> Result<CredentialShare, Error> {
+    let key = SharingDataKey::ShareRecord(share_id);
+    let share: CredentialShare = env
+        .storage()
+        .persistent()
+        .get(&key)
+        .ok_or(Error::SharedDocumentNotFound)?;
+    env.storage().persistent().extend_ttl(&key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND);
+    Ok(share)
+}
+
+fn write_credential_share(env: &Env, share_id: u64, share: &CredentialShare) {
+    let key = SharingDataKey::ShareRecord(share_id);
+    env.storage().persistent().set(&key, share);
+    env.storage().persistent().extend_ttl(&key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND);
 }
