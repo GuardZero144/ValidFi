@@ -1,4 +1,4 @@
-// File: /Users/inhousecodes/Documents/GuardZero/frontend/src/app/layout.tsx
+// File: /Users/inhousecodes/Documents/rehm-validfi/ValidFi/frontend/src/app/layout.tsx
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
