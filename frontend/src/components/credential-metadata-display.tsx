@@ -91,6 +91,9 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
   const expiredCount = credentials.filter((c) => c.status === 'expired').length;
   const revokedCount = credentials.filter((c) => c.status === 'revoked').length;
 
+  const uniqueIssuers = new Set(credentials.map((c) => c.issuer)).size;
+  const uniqueTypes = new Set(credentials.map((c) => c.type)).size;
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -145,30 +148,40 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
       {/* Summary Section */}
       {credentials.length > 0 && (
         <div className="bg-white/5 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-green-200">Total:</span>
-              <span className="text-white font-medium">{credentials.length}</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{credentials.length}</div>
+              <div className="text-green-200 text-sm">Total Credentials</div>
             </div>
-            {activeCount > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                <span className="text-green-200">{activeCount} Active</span>
-              </div>
-            )}
-            {expiredCount > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                <span className="text-green-200">{expiredCount} Expired</span>
-              </div>
-            )}
-            {revokedCount > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                <span className="text-green-200">{revokedCount} Revoked</span>
-              </div>
-            )}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-400">{activeCount}</div>
+              <div className="text-green-200 text-sm">Active</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-400">{uniqueIssuers}</div>
+              <div className="text-green-200 text-sm">Unique Issuers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-400">{uniqueTypes}</div>
+              <div className="text-green-200 text-sm">Credential Types</div>
+            </div>
           </div>
+          {(expiredCount > 0 || revokedCount > 0) && (
+            <div className="mt-4 pt-4 border-t border-green-400/20 flex items-center gap-4 text-sm">
+              {expiredCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                  <span className="text-green-200">{expiredCount} Expired</span>
+                </div>
+              )}
+              {revokedCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span className="text-green-200">{revokedCount} Revoked</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
