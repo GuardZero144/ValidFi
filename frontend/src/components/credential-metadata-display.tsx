@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Info, Calendar, Clock, Building2, Tag, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
+import { Info, Calendar, Clock, Building2, Tag, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 
@@ -24,7 +24,20 @@ interface CredentialMetadataDisplayProps {
 
 export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDisplayProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired' | 'revoked'>('all');
   const { announceToScreenReader } = useAccessibility();
+
+  const filteredCredentials = useMemo(() => {
+    return credentials.filter((credential) => {
+      const matchesSearch =
+        credential.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        credential.issuerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        credential.type.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || credential.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [credentials, searchQuery, statusFilter]);
 
   const handleToggleExpand = useCallback(
     (id: string) => {
@@ -122,9 +135,42 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
         </div>
       )}
 
+      {/* Search and Filter */}
+      {credentials.length > 0 && (
+        <div className="bg-white/5 rounded-lg p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-400" aria-hidden="true" />
+              <input
+                type="text"
+                placeholder="Search credentials..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white/10 border border-green-400/30 rounded-lg pl-10 pr-4 py-2 text-white placeholder-green-300 focus:outline-none focus:border-green-400"
+                aria-label="Search credentials"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-green-400" aria-hidden="true" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'expired' | 'revoked')}
+                className="bg-white/10 border border-green-400/30 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                aria-label="Filter by status"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
+                <option value="revoked">Revoked</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4" role="list" aria-label="Credential metadata list">
         <AnimatePresence mode="popLayout">
-          {credentials.length === 0 ? (
+          {filteredCredentials.length === 0 ? (
             <motion.div
               key="empty"
               className="text-center py-8 text-green-200"
@@ -137,7 +183,7 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
               <p>No credentials to display</p>
             </motion.div>
           ) : (
-            credentials.map((credential, index) => (
+            filteredCredentials.map((credential, index) => (
               <motion.div
                 key={credential.id}
                 className="bg-white/10 rounded-lg overflow-hidden"
