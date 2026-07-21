@@ -31,6 +31,7 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired' | 'revoked'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [compareMode, setCompareMode] = useState(false);
   const { announceToScreenReader } = useAccessibility();
 
   const filteredCredentials = useMemo(() => {
@@ -67,6 +68,10 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
   const handleSelectCredential = useCallback(
     (id: string) => {
+      if (compareMode && selectedIds.size >= 2) {
+        announceToScreenReader('Maximum 2 credentials can be compared at once');
+        return;
+      }
       const newSelected = new Set(selectedIds);
       if (newSelected.has(id)) {
         newSelected.delete(id);
@@ -75,8 +80,30 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
       }
       setSelectedIds(newSelected);
     },
-    [selectedIds]
+    [selectedIds, compareMode, announceToScreenReader]
   );
+
+  const handleToggleCompareMode = useCallback(() => {
+    setCompareMode((prev) => !prev);
+    setSelectedIds(new Set());
+    announceToScreenReader(compareMode ? 'Exited compare mode' : 'Entered compare mode - select 2 credentials to compare');
+  }, [compareMode, announceToScreenReader]);
+
+  const compareCredentials = useMemo(() => {
+    if (selectedIds.size !== 2) return null;
+    const selected = credentials.filter((c) => selectedIds.has(c.id));
+    if (selected.length !== 2) return null;
+
+    const [cred1, cred2] = selected;
+    const differences: string[] = [];
+
+    if (cred1.type !== cred2.type) differences.push('type');
+    if (cred1.issuer !== cred2.issuer) differences.push('issuer');
+    if (cred1.issuedAt !== cred2.issuedAt) differences.push('issuedAt');
+    if (cred1.status !== cred2.status) differences.push('status');
+
+    return { credentials: selected, differences };
+  }, [selectedIds, credentials]);
 
   const handleBulkExport = useCallback(() => {
     const selectedCredentials = filteredCredentials.filter((c) => selectedIds.has(c.id));
@@ -226,20 +253,33 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
       {filteredCredentials.length > 0 && (
         <div className="flex items-center justify-between mb-4 px-2">
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedIds.size === filteredCredentials.length && filteredCredentials.length > 0}
-                onChange={handleSelectAll}
-                className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-500 bg-white/10"
-                aria-label="Select all credentials"
-              />
-              <span className="text-green-200 text-sm">
-                {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
-              </span>
-            </label>
+            {!compareMode && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === filteredCredentials.length && filteredCredentials.length > 0}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-500 bg-white/10"
+                  aria-label="Select all credentials"
+                />
+                <span className="text-green-200 text-sm">
+                  {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
+                </span>
+              </label>
+            )}
+            <button
+              onClick={handleToggleCompareMode}
+              className={`px-3 py-1 rounded text-sm transition-colors ${
+                compareMode
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white/10 text-green-200 hover:bg-white/20'
+              }`}
+              aria-label={compareMode ? 'Exit compare mode' : 'Enter compare mode'}
+            >
+              {compareMode ? 'Exit Compare' : 'Compare'}
+            </button>
           </div>
-          {selectedIds.size > 0 && (
+          {selectedIds.size > 0 && !compareMode && (
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -252,6 +292,56 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
             </motion.button>
           )}
         </div>
+      )}
+
+      {/* Comparison Panel */}
+      <AnimatePresence>
+        {compareMode && compareCredentials && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-white/5 rounded-lg p-4 mb-6 overflow-hidden"
+          >
+            <h3 className="text-lg font-semibold text-white mb-4">Credential Comparison</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {compareCredentials.credentials.map((cred, index) => (
+                <div key={cred.id} className="bg-white/10 rounded-lg p-3">
+                  <p className="text-white font-medium mb-2">{cred.name}</p>
+                  <div className="space-y-1 text-sm">
+                    <p className={compareCredentials.differences.includes('type') ? 'text-yellow-400' : 'text-green-200'}>
+                      Type: {cred.type}
+                    </p>
+                    <p className={compareCredentials.differences.includes('issuer') ? 'text-yellow-400' : 'text-green-200'}>
+                      Issuer: {cred.issuerName}
+                    </p>
+                    <p className={compareCredentials.differences.includes('status') ? 'text-yellow-400' : 'text-green-200'}>
+                      Status: {cred.status}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {compareCredentials.differences.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-green-400/20">
+                <p className="text-yellow-400 text-sm">
+                  Differences found in: {compareCredentials.differences.join(', ')}
+                </p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Compare Mode Instructions */}
+      {compareMode && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 mb-4 text-blue-200 text-sm"
+        >
+          Select 2 credentials to compare their metadata side by side.
+        </motion.div>
       )}
 
       <div className="space-y-4" role="list" aria-label="Credential metadata list">
