@@ -42,6 +42,8 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired' | 'revoked'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [compareMode, setCompareMode] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const { announceToScreenReader } = useAccessibility();
 
   const filteredCredentials = useMemo(() => {
@@ -182,6 +184,18 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
     return { errors, warnings, isValid: errors.length === 0 };
   }, []);
 
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    announceToScreenReader('Refreshing credential metadata...');
+    
+    // Simulate refresh delay
+    setTimeout(() => {
+      setIsRefreshing(false);
+      setLastRefresh(new Date());
+      announceToScreenReader('Credential metadata refreshed');
+    }, 1500);
+  }, [announceToScreenReader]);
+
   const activeCount = credentials.filter((c) => c.status === 'active').length;
   const expiredCount = credentials.filter((c) => c.status === 'expired').length;
   const revokedCount = credentials.filter((c) => c.status === 'revoked').length;
@@ -236,9 +250,46 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
   return (
     <div role="region" aria-labelledby="metadata-heading">
-      <h2 id="metadata-heading" className="text-2xl font-bold text-white mb-6">
-        Credential Metadata
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 id="metadata-heading" className="text-2xl font-bold text-white">
+          Credential Metadata
+        </h2>
+        <div className="flex items-center gap-3">
+          {lastRefresh && (
+            <span className="text-green-300 text-sm">
+              Last updated: {formatDateTime(lastRefresh.toISOString())}
+            </span>
+          )}
+          <motion.button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              isRefreshing
+                ? 'bg-green-600/50 text-white/70 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
+            animate={isRefreshing ? { rotate: 360 } : {}}
+            transition={isRefreshing ? { duration: 1, repeat: Infinity, ease: 'linear' } : {}}
+            aria-label={isRefreshing ? 'Refreshing metadata' : 'Refresh metadata'}
+          >
+            <svg
+              className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </motion.button>
+        </div>
+      </div>
 
       {/* Summary Section */}
       {credentials.length > 0 && (
