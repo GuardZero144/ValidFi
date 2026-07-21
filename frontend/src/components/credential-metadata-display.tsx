@@ -26,6 +26,7 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired' | 'revoked'>('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { announceToScreenReader } = useAccessibility();
 
   const filteredCredentials = useMemo(() => {
@@ -49,6 +50,42 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
     },
     [expandedId, announceToScreenReader]
   );
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedIds.size === filteredCredentials.length) {
+      setSelectedIds(new Set());
+      announceToScreenReader('Deselected all credentials');
+    } else {
+      setSelectedIds(new Set(filteredCredentials.map((c) => c.id)));
+      announceToScreenReader(`Selected ${filteredCredentials.length} credentials`);
+    }
+  }, [filteredCredentials, selectedIds.size, announceToScreenReader]);
+
+  const handleSelectCredential = useCallback(
+    (id: string) => {
+      const newSelected = new Set(selectedIds);
+      if (newSelected.has(id)) {
+        newSelected.delete(id);
+      } else {
+        newSelected.add(id);
+      }
+      setSelectedIds(newSelected);
+    },
+    [selectedIds]
+  );
+
+  const handleBulkExport = useCallback(() => {
+    const selectedCredentials = filteredCredentials.filter((c) => selectedIds.has(c.id));
+    const exportData = JSON.stringify(selectedCredentials, null, 2);
+    const blob = new Blob([exportData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `credentials-metadata-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    announceToScreenReader(`Exported ${selectedIds.size} credentials`);
+  }, [filteredCredentials, selectedIds, announceToScreenReader]);
 
   const activeCount = credentials.filter((c) => c.status === 'active').length;
   const expiredCount = credentials.filter((c) => c.status === 'expired').length;
@@ -168,6 +205,38 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
         </div>
       )}
 
+      {/* Bulk Actions */}
+      {filteredCredentials.length > 0 && (
+        <div className="flex items-center justify-between mb-4 px-2">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === filteredCredentials.length && filteredCredentials.length > 0}
+                onChange={handleSelectAll}
+                className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-500 bg-white/10"
+                aria-label="Select all credentials"
+              />
+              <span className="text-green-200 text-sm">
+                {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
+              </span>
+            </label>
+          </div>
+          {selectedIds.size > 0 && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+              onClick={handleBulkExport}
+              aria-label={`Export ${selectedIds.size} selected credentials`}
+            >
+              <Info className="w-4 h-4" aria-hidden="true" />
+              Export Selected
+            </motion.button>
+          )}
+        </div>
+      )}
+
       <div className="space-y-4" role="list" aria-label="Credential metadata list">
         <AnimatePresence mode="popLayout">
           {filteredCredentials.length === 0 ? (
@@ -211,6 +280,14 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                   aria-controls={`metadata-details-${credential.id}`}
                 >
                   <div className="flex items-center gap-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(credential.id)}
+                      onChange={() => handleSelectCredential(credential.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-500 bg-white/10"
+                      aria-label={`Select ${credential.name}`}
+                    />
                     <Info className="w-6 h-6 text-green-400" aria-hidden="true" />
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
