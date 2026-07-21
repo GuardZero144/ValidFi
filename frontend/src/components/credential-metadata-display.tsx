@@ -52,10 +52,14 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
   const filteredCredentials = useMemo(() => {
     return credentials.filter((credential) => {
+      const query = searchQuery.toLowerCase();
       const matchesSearch =
-        credential.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        credential.issuerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        credential.type.toLowerCase().includes(searchQuery.toLowerCase());
+        credential.name.toLowerCase().includes(query) ||
+        credential.issuerName.toLowerCase().includes(query) ||
+        credential.type.toLowerCase().includes(query) ||
+        credential.issuer.toLowerCase().includes(query) ||
+        (credential.description && credential.description.toLowerCase().includes(query)) ||
+        (credential.version && credential.version.toLowerCase().includes(query));
       const matchesStatus = statusFilter === 'all' || credential.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -370,12 +374,21 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-400" aria-hidden="true" />
               <input
                 type="text"
-                placeholder="Search credentials..."
+                placeholder="Search by name, issuer, type, or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-white/10 border border-green-400/30 rounded-lg pl-10 pr-4 py-2 text-white placeholder-green-300 focus:outline-none focus:border-green-400"
                 aria-label="Search credentials"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-400 hover:text-green-300"
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-green-400" aria-hidden="true" />
@@ -392,6 +405,13 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
               </select>
             </div>
           </div>
+          {(searchQuery || statusFilter !== 'all') && (
+            <div className="mt-3 text-sm text-green-200">
+              Showing {filteredCredentials.length} of {credentials.length} credentials
+              {searchQuery && ` matching "${searchQuery}"`}
+              {statusFilter !== 'all' && ` with status "${statusFilter}"`}
+            </div>
+          )}
         </div>
       )}
 
