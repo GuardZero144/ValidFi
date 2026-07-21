@@ -212,13 +212,25 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                 >
                   <div className="flex items-center gap-4">
                     <Info className="w-6 h-6 text-green-400" aria-hidden="true" />
-                    <div>
-                      <p className="text-white font-medium">{credential.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-green-200 text-sm">{credential.type}</span>
-                        <span className="text-green-400">·</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <p className="text-white font-medium">{credential.name}</p>
                         <span className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(credential.status)}`}>
                           {credential.status.charAt(0).toUpperCase() + credential.status.slice(1)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-green-200">
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" aria-hidden="true" />
+                          {credential.type}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Building2 className="w-3 h-3" aria-hidden="true" />
+                          {credential.issuerName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" aria-hidden="true" />
+                          {getRelativeTime(credential.issuedAt)}
                         </span>
                       </div>
                     </div>
