@@ -16,6 +16,10 @@ interface CredentialMetadata {
   expiresAt?: string;
   status: 'active' | 'expired' | 'revoked';
   description?: string;
+  version?: string;
+  schema?: string;
+  proofType?: string;
+  signatureAlgorithm?: string;
 }
 
 interface CredentialMetadataDisplayProps {
@@ -400,6 +404,55 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                             <p className="text-green-100 text-sm">{credential.description}</p>
                           </div>
                         )}
+
+                        {/* Technical Details */}
+                        {(credential.version || credential.schema || credential.proofType) && (
+                          <div className="mt-3 pt-3 border-t border-green-400/20">
+                            <p className="text-green-200 text-sm mb-2">Technical Details</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                              {credential.version && (
+                                <div>
+                                  <span className="text-green-300">Version:</span>
+                                  <span className="text-white ml-2">{credential.version}</span>
+                                </div>
+                              )}
+                              {credential.schema && (
+                                <div>
+                                  <span className="text-green-300">Schema:</span>
+                                  <span className="text-white ml-2 font-mono text-xs break-all">{credential.schema}</span>
+                                </div>
+                              )}
+                              {credential.proofType && (
+                                <div>
+                                  <span className="text-green-300">Proof Type:</span>
+                                  <span className="text-white ml-2">{credential.proofType}</span>
+                                </div>
+                              )}
+                              {credential.signatureAlgorithm && (
+                                <div>
+                                  <span className="text-green-300">Algorithm:</span>
+                                  <span className="text-white ml-2">{credential.signatureAlgorithm}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Validation Status */}
+                        <div className="mt-3 pt-3 border-t border-green-400/20">
+                          <p className="text-green-200 text-sm mb-2">Validation Status</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${
+                              credential.status === 'active' ? 'bg-green-500' : 
+                              credential.status === 'expired' ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}></span>
+                            <span className="text-white text-sm">
+                              {credential.status === 'active' ? 'Valid and verified' :
+                               credential.status === 'expired' ? 'Expired - requires renewal' :
+                               'Revoked - contact issuer'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   )}
