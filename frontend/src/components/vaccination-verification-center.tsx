@@ -67,11 +67,13 @@ export function VaccinationVerificationCenter({ walletAddress }: VaccinationVeri
   };
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-white mb-6">Vaccination Verification Center</h2>
+    <div role="region" aria-labelledby="verification-heading">
+      <h2 id="verification-heading" className="text-2xl font-bold text-white mb-6">
+        Vaccination Verification Center
+      </h2>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6" role="group" aria-label="Verification statistics">
         {[
           { count: stats.approved, label: 'Verified', bg: 'bg-green-500/20', color: 'text-green-400' },
           { count: stats.pending, label: 'Pending', bg: 'bg-yellow-500/20', color: 'text-yellow-400' },
@@ -84,6 +86,8 @@ export function VaccinationVerificationCenter({ walletAddress }: VaccinationVeri
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1, type: 'spring', stiffness: 300, damping: 25 }}
             whileHover={{ scale: 1.03 }}
+            role="status"
+            aria-label={`${stat.count} ${stat.label} verifications`}
           >
             <motion.div
               className={`text-3xl font-bold ${stat.color}`}
@@ -91,6 +95,7 @@ export function VaccinationVerificationCenter({ walletAddress }: VaccinationVeri
               initial={{ scale: 0.5 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              aria-hidden="true"
             >
               {stat.count}
             </motion.div>
@@ -100,7 +105,7 @@ export function VaccinationVerificationCenter({ walletAddress }: VaccinationVeri
       </div>
 
       {/* Verification list */}
-      <div className="space-y-4">
+      <div className="space-y-4" role="list" aria-label="Verification requests">
         <AnimatePresence mode="popLayout">
           {verifications.length === 0 ? (
             <motion.div
@@ -109,8 +114,9 @@ export function VaccinationVerificationCenter({ walletAddress }: VaccinationVeri
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              role="status"
             >
-              <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
               <p>No vaccination verifications yet</p>
             </motion.div>
           ) : (
@@ -130,6 +136,8 @@ export function VaccinationVerificationCenter({ walletAddress }: VaccinationVeri
                     damping: 25,
                   }}
                   layout
+                  role="listitem"
+                  aria-label={`${verification.vaccineType}, status: ${config.label}, submitted: ${new Date(verification.createdAt).toLocaleDateString()}`}
                 >
                   <div className="flex items-center gap-4">
                     {config.pulse ? (
@@ -161,6 +169,7 @@ export function VaccinationVerificationCenter({ walletAddress }: VaccinationVeri
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    aria-hidden="true"
                   >
                     {config.label}
                   </motion.span>
