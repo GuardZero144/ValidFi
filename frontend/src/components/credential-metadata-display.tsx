@@ -115,17 +115,51 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
     return { credentials: selected, differences };
   }, [selectedIds, credentials]);
 
-  const handleBulkExport = useCallback(() => {
+  const handleBulkExport = useCallback((format: 'json' | 'csv' | 'xml' = 'json') => {
     const selectedCredentials = filteredCredentials.filter((c) => selectedIds.has(c.id));
-    const exportData = JSON.stringify(selectedCredentials, null, 2);
-    const blob = new Blob([exportData], { type: 'application/json' });
+    let exportData: string;
+    let mimeType: string;
+    let fileExtension: string;
+
+    switch (format) {
+      case 'csv':
+        const headers = ['id', 'name', 'type', 'issuer', 'issuerName', 'issuedAt', 'updatedAt', 'status'];
+        const rows = selectedCredentials.map((c) => 
+          headers.map((h) => `"${String(c[h as keyof CredentialMetadata] || '').replace(/"/g, '""')}"`).join(',')
+        );
+        exportData = [headers.join(','), ...rows].join('\n');
+        mimeType = 'text/csv';
+        fileExtension = 'csv';
+        break;
+      case 'xml':
+        exportData = '<?xml version="1.0" encoding="UTF-8"?>\n<credentials>\n';
+        selectedCredentials.forEach((c) => {
+          exportData += `  <credential>\n`;
+          Object.entries(c).forEach(([key, value]) => {
+            if (value !== undefined && key !== 'history') {
+              exportData += `    <${key}>${String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</${key}>\n`;
+            }
+          });
+          exportData += `  </credential>\n`;
+        });
+        exportData += '</credentials>';
+        mimeType = 'application/xml';
+        fileExtension = 'xml';
+        break;
+      default:
+        exportData = JSON.stringify(selectedCredentials, null, 2);
+        mimeType = 'application/json';
+        fileExtension = 'json';
+    }
+
+    const blob = new Blob([exportData], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `credentials-metadata-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `credentials-metadata-${new Date().toISOString().split('T')[0]}.${fileExtension}`;
     a.click();
     URL.revokeObjectURL(url);
-    announceToScreenReader(`Exported ${selectedIds.size} credentials`);
+    announceToScreenReader(`Exported ${selectedIds.size} credentials as ${format.toUpperCase()}`);
   }, [filteredCredentials, selectedIds, announceToScreenReader]);
 
   const validateCredential = useCallback((credential: CredentialMetadata) => {
@@ -310,16 +344,36 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
             </button>
           </div>
           {selectedIds.size > 0 && !compareMode && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
-              onClick={handleBulkExport}
-              aria-label={`Export ${selectedIds.size} selected credentials`}
-            >
-              <Info className="w-4 h-4" aria-hidden="true" />
-              Export Selected
-            </motion.button>
+            <div className="flex items-center gap-2">
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                onClick={() => handleBulkExport('json')}
+                aria-label={`Export ${selectedIds.size} selected credentials as JSON`}
+              >
+                <Info className="w-4 h-4" aria-hidden="true" />
+                JSON
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                onClick={() => handleBulkExport('csv')}
+                aria-label={`Export ${selectedIds.size} selected credentials as CSV`}
+              >
+                CSV
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
+                onClick={() => handleBulkExport('xml')}
+                aria-label={`Export ${selectedIds.size} selected credentials as XML`}
+              >
+                XML
+              </motion.button>
+            </div>
           )}
         </div>
       )}
