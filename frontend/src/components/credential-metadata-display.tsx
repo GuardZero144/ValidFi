@@ -37,6 +37,10 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
     [expandedId, announceToScreenReader]
   );
 
+  const activeCount = credentials.filter((c) => c.status === 'active').length;
+  const expiredCount = credentials.filter((c) => c.status === 'expired').length;
+  const revokedCount = credentials.filter((c) => c.status === 'revoked').length;
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -53,6 +57,20 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const getRelativeTime = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return `${Math.floor(diffDays / 365)} years ago`;
   };
 
   const getStatusColor = (status: string) => {
@@ -73,6 +91,36 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
       <h2 id="metadata-heading" className="text-2xl font-bold text-white mb-6">
         Credential Metadata
       </h2>
+
+      {/* Summary Section */}
+      {credentials.length > 0 && (
+        <div className="bg-white/5 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-green-200">Total:</span>
+              <span className="text-white font-medium">{credentials.length}</span>
+            </div>
+            {activeCount > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                <span className="text-green-200">{activeCount} Active</span>
+              </div>
+            )}
+            {expiredCount > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                <span className="text-green-200">{expiredCount} Expired</span>
+              </div>
+            )}
+            {revokedCount > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                <span className="text-green-200">{revokedCount} Revoked</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4" role="list" aria-label="Credential metadata list">
         <AnimatePresence mode="popLayout">
