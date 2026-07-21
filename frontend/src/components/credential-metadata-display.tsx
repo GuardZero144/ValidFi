@@ -44,6 +44,10 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
   const [compareMode, setCompareMode] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; title: string; description?: string }>({
+    show: false,
+    title: '',
+  });
   const { announceToScreenReader } = useAccessibility();
 
   const filteredCredentials = useMemo(() => {
@@ -195,6 +199,33 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
       announceToScreenReader('Credential metadata refreshed');
     }, 1500);
   }, [announceToScreenReader]);
+
+  const handleCopyToClipboard = useCallback(async (credential: CredentialMetadata) => {
+    const metadataText = [
+      `Name: ${credential.name}`,
+      `Type: ${credential.type}`,
+      `Issuer: ${credential.issuerName}`,
+      `Issuer ID: ${credential.issuer}`,
+      `Issued: ${formatDate(credential.issuedAt)}`,
+      `Updated: ${formatDateTime(credential.updatedAt)}`,
+      `Status: ${credential.status}`,
+      credential.expiresAt ? `Expires: ${formatDate(credential.expiresAt)}` : '',
+      credential.description ? `Description: ${credential.description}` : '',
+    ].filter(Boolean).join('\n');
+
+    try {
+      await navigator.clipboard.writeText(metadataText);
+      announceToScreenReader('Metadata copied to clipboard');
+      setToast({
+        show: true,
+        title: 'Copied to Clipboard',
+        description: 'Credential metadata has been copied',
+      });
+      setTimeout(() => setToast((t) => ({ ...t, show: false })), 2000);
+    } catch {
+      announceToScreenReader('Failed to copy to clipboard');
+    }
+  }, [formatDate, formatDateTime, announceToScreenReader]);
 
   const activeCount = credentials.filter((c) => c.status === 'active').length;
   const expiredCount = credentials.filter((c) => c.status === 'expired').length;
@@ -566,11 +597,27 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                       </div>
                     </div>
                   </div>
-                  {expandedId === credential.id ? (
-                    <ChevronUp className="w-5 h-5 text-green-400" aria-hidden="true" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-green-400" aria-hidden="true" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    <motion.button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyToClipboard(credential);
+                      }}
+                      className="p-1.5 rounded hover:bg-white/10 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      aria-label={`Copy ${credential.name} metadata to clipboard`}
+                    >
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </motion.button>
+                    {expandedId === credential.id ? (
+                      <ChevronUp className="w-5 h-5 text-green-400" aria-hidden="true" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-green-400" aria-hidden="true" />
+                    )}
+                  </div>
                 </div>
 
                 {/* Details */}
@@ -724,6 +771,28 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
           )}
         </AnimatePresence>
       </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50"
+            role="alert"
+            aria-live="polite"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <div>
+              <p className="font-medium">{toast.title}</p>
+              {toast.description && <p className="text-sm text-green-100">{toast.description}</p>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
