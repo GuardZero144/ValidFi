@@ -20,6 +20,16 @@ interface CredentialMetadata {
   schema?: string;
   proofType?: string;
   signatureAlgorithm?: string;
+  history?: MetadataHistoryItem[];
+}
+
+interface MetadataHistoryItem {
+  timestamp: string;
+  action: string;
+  field: string;
+  oldValue?: string;
+  newValue?: string;
+  performedBy: string;
 }
 
 interface CredentialMetadataDisplayProps {
@@ -543,6 +553,31 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                             </span>
                           </div>
                         </div>
+
+                        {/* Metadata History */}
+                        {credential.history && credential.history.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-green-400/20">
+                            <p className="text-green-200 text-sm mb-2">Change History</p>
+                            <div className="space-y-2 max-h-32 overflow-y-auto">
+                              {credential.history.map((item, idx) => (
+                                <div key={idx} className="text-xs bg-white/5 rounded p-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-green-300">{item.action}</span>
+                                    <span className="text-green-400">{formatDateTime(item.timestamp)}</span>
+                                  </div>
+                                  <p className="text-green-100 mt-1">
+                                    {item.field}: {item.oldValue && (
+                                      <span className="line-through text-green-400">{item.oldValue}</span>
+                                    )}
+                                    {item.oldValue && ' → '}
+                                    <span className="text-white">{item.newValue}</span>
+                                  </p>
+                                  <p className="text-green-400 mt-0.5">by {item.performedBy}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}
