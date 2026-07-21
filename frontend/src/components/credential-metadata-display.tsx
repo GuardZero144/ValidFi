@@ -128,6 +128,26 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
     announceToScreenReader(`Exported ${selectedIds.size} credentials`);
   }, [filteredCredentials, selectedIds, announceToScreenReader]);
 
+  const validateCredential = useCallback((credential: CredentialMetadata) => {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!credential.name) errors.push('Missing credential name');
+    if (!credential.type) errors.push('Missing credential type');
+    if (!credential.issuer) errors.push('Missing issuer information');
+    if (!credential.issuedAt) errors.push('Missing issuance date');
+    if (!credential.updatedAt) warnings.push('Missing last update timestamp');
+
+    if (credential.expiresAt) {
+      const expiryDate = new Date(credential.expiresAt);
+      if (expiryDate < new Date()) {
+        warnings.push('Credential has expired');
+      }
+    }
+
+    return { errors, warnings, isValid: errors.length === 0 };
+  }, []);
+
   const activeCount = credentials.filter((c) => c.status === 'active').length;
   const expiredCount = credentials.filter((c) => c.status === 'expired').length;
   const revokedCount = credentials.filter((c) => c.status === 'revoked').length;
@@ -412,6 +432,18 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                         <span className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(credential.status)}`}>
                           {credential.status.charAt(0).toUpperCase() + credential.status.slice(1)}
                         </span>
+                        {(() => {
+                          const validation = validateCredential(credential);
+                          return validation.isValid ? (
+                            <span className="text-xs px-2 py-0.5 rounded border bg-green-500/20 text-green-400 border-green-500/30">
+                              Valid
+                            </span>
+                          ) : (
+                            <span className="text-xs px-2 py-0.5 rounded border bg-red-500/20 text-red-400 border-red-500/30">
+                              Invalid
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-green-200">
                         <span className="flex items-center gap-1">
