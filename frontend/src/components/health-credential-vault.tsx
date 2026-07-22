@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Upload, Shield, FileText, Trash2, Syringe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedProgress, SuccessOverlay, SuccessToast } from './animations';
+import { DeletionConfirmationModal } from './deletion-confirmation-modal';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 
 interface HealthCredentialVaultProps {
@@ -25,6 +26,9 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
     show: false,
     title: '',
   });
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
+  const [credentialToDelete, setCredentialToDelete] = useState<Credential | null>(null);
+  const [deletionStatus, setDeletionStatus] = useState<'idle' | 'deleting' | 'deleted' | 'failed' | 'undoable'>('idle');
   const { announceToScreenReader } = useAccessibility();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,18 +73,50 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
   );
 
   const handleDelete = useCallback(
-    (id: string, vaccineType: string) => {
-      setCredentials((prev) => prev.filter((c) => c.id !== id));
-      setToast({
-        show: true,
-        title: 'Credential Removed',
-        description: 'The credential has been deleted from your vault',
-      });
-      announceToScreenReader(`Deleted ${vaccineType} credential`);
-      setTimeout(() => setToast((t) => ({ ...t, show: false })), 3000);
+    (credential: Credential) => {
+      setCredentialToDelete(credential);
+      setIsDeletionModalOpen(true);
+      setDeletionStatus('idle');
     },
-    [announceToScreenReader]
+    []
   );
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!credentialToDelete) return;
+
+    setDeletionStatus('deleting');
+    announceToScreenReader('Deleting credential...');
+
+    setTimeout(() => {
+      setCredentials((prev) => prev.filter((c) => c.id !== credentialToDelete.id));
+      setDeletionStatus('undoable');
+      announceToScreenReader('Credential deleted. You have 10 seconds to undo.');
+    }, 1500);
+  }, [credentialToDelete, announceToScreenReader]);
+
+  const handleUndoDelete = useCallback(() => {
+    if (!credentialToDelete) return;
+
+    setCredentials((prev) => [...prev, credentialToDelete]);
+    setDeletionStatus('deleted');
+    setToast({
+      show: true,
+      title: 'Deletion Undone',
+      description: 'The credential has been restored to your vault',
+    });
+    announceToScreenReader('Credential restored');
+    setTimeout(() => {
+      setIsDeletionModalOpen(false);
+      setDeletionStatus('idle');
+      setToast((t) => ({ ...t, show: false }));
+    }, 2000);
+  }, [credentialToDelete, announceToScreenReader]);
+
+  const handleCancelDelete = useCallback(() => {
+    setIsDeletionModalOpen(false);
+    setCredentialToDelete(null);
+    setDeletionStatus('idle');
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, action: () => void) => {
@@ -194,9 +230,9 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
                 </div>
                 <motion.button
                   className="text-red-400 hover:text-red-300 transition-colors"
-                  onClick={() => handleDelete(credential.id, credential.vaccineType)}
+                  onClick={() => handleDelete(credential)}
                   onKeyDown={(e) =>
-                    handleKeyDown(e, () => handleDelete(credential.id, credential.vaccineType))
+                    handleKeyDown(e, () => handleDelete(credential))
                   }
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -219,6 +255,16 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
         title={toast.title}
         description={toast.description}
         onDismiss={() => setToast((t) => ({ ...t, show: false }))}
+      />
+
+      {/* Deletion confirmation modal */}
+      <DeletionConfirmationModal
+        isOpen={isDeletionModalOpen}
+        credential={credentialToDelete}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        onUndo={handleUndoDelete}
+        deletionStatus={deletionStatus}
       />
     </div>
   );
