@@ -16,6 +16,7 @@ import { AiModule } from './ai/ai.module';
 import { SorobanModule } from './soroban/soroban.module';
 import { IndexerModule } from './indexer/indexer.module';
 import { HealthModule } from './health/health.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { HealthModule } from './health/health.module';
     SorobanModule,
     IndexerModule,
     HealthModule,
+    AuditModule,
   ],
   providers: [
     {
