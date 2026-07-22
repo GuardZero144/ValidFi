@@ -1,11 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, UseInterceptors, Request } from '@nestjs/common';
 import { VerificationService } from './verification.service';
 import { CreateVerificationDto } from './dto/create-verification.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuditInterceptor } from '../audit/audit.interceptor';
+import { Audit } from '../audit/audit.decorator';
+import { AuditOperation } from '../audit/audit-log.entity';
 
 @Controller('verifications')
 @UseGuards(JwtAuthGuard)
+@UseInterceptors(AuditInterceptor)
 export class VerificationController {
   constructor(private readonly verificationService: VerificationService) {}
 
@@ -30,11 +34,13 @@ export class VerificationController {
   }
 
   @Patch(':id/approve')
+  @Audit(AuditOperation.VERIFIED)
   approve(@Param('id') id: string) {
     return this.verificationService.approve(id);
   }
 
   @Patch(':id/reject')
+  @Audit(AuditOperation.VERIFIED)
   reject(@Param('id') id: string, @Body('reason') reason: string) {
     return this.verificationService.reject(id, reason);
   }
