@@ -192,6 +192,24 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
     return { errors, warnings, isValid: errors.length === 0 };
   }, []);
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
     announceToScreenReader('Refreshing credential metadata...');
@@ -237,24 +255,6 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
   const uniqueIssuers = new Set(credentials.map((c) => c.issuer)).size;
   const uniqueTypes = new Set(credentials.map((c) => c.type)).size;
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
 
   const getRelativeTime = (dateString: string) => {
     const now = new Date();
