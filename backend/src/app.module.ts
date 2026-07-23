@@ -18,6 +18,7 @@ import { IndexerModule } from './indexer/indexer.module';
 import { HealthModule } from './health/health.module';
 import { AuditModule } from './audit/audit.module';
 import { BackupModule } from './backup/backup.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
@@ -73,6 +74,7 @@ import { PermissionsModule } from './permissions/permissions.module';
     HealthModule,
     AuditModule,
     BackupModule,
+    AnalyticsModule,
     PermissionsModule,
   ],
   providers: [
