@@ -69,4 +69,25 @@ export class DataSharingService {
     sharedData.accessExpiry += additionalSeconds;
     return await this.sharedDataRepository.save(sharedData);
   }
+
+  async findAllByOwner(ownerAddress: string): Promise<SharedData[]> {
+    return await this.sharedDataRepository.find({
+      where: { ownerAddress },
+      order: { sharedAt: 'DESC' },
+    });
+  }
+
+  async restore(data: Partial<SharedData>): Promise<SharedData> {
+    const existing = await this.sharedDataRepository.findOne({
+      where: { documentHash: data.documentHash, ownerAddress: data.ownerAddress },
+    });
+
+    if (existing) {
+      Object.assign(existing, data);
+      return await this.sharedDataRepository.save(existing);
+    }
+
+    const sharedData = this.sharedDataRepository.create(data);
+    return await this.sharedDataRepository.save(sharedData);
+  }
 }

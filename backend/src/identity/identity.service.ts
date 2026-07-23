@@ -75,4 +75,25 @@ export class IdentityService {
   async findByDocumentHash(documentHash: string): Promise<Identity> {
     return await this.identityRepository.findOne({ where: { documentHash } });
   }
+
+  async findAllByWallet(walletAddress: string): Promise<Identity[]> {
+    return await this.identityRepository.find({
+      where: { walletAddress },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async restore(data: Partial<Identity>): Promise<Identity> {
+    const existing = await this.identityRepository.findOne({
+      where: { documentHash: data.documentHash },
+    });
+
+    if (existing) {
+      Object.assign(existing, data);
+      return await this.identityRepository.save(existing);
+    }
+
+    const identity = this.identityRepository.create(data);
+    return await this.identityRepository.save(identity);
+  }
 }

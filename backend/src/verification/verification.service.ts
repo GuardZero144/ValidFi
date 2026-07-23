@@ -71,4 +71,25 @@ export class VerificationService {
     if (!verification.expiresAt) return false;
     return verification.expiresAt < new Date();
   }
+
+  async findAllByWallet(walletAddress: string): Promise<Verification[]> {
+    return await this.verificationRepository.find({
+      where: { walletAddress },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async restore(data: Partial<Verification>): Promise<Verification> {
+    const existing = await this.verificationRepository.findOne({
+      where: { proofHash: data.proofHash },
+    });
+
+    if (existing) {
+      Object.assign(existing, data);
+      return await this.verificationRepository.save(existing);
+    }
+
+    const verification = this.verificationRepository.create(data);
+    return await this.verificationRepository.save(verification);
+  }
 }
