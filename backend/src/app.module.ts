@@ -17,6 +17,7 @@ import { SorobanModule } from './soroban/soroban.module';
 import { IndexerModule } from './indexer/indexer.module';
 import { HealthModule } from './health/health.module';
 import { AuditModule } from './audit/audit.module';
+import { BackupModule } from './backup/backup.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { AuditModule } from './audit/audit.module';
     IndexerModule,
     HealthModule,
     AuditModule,
+    BackupModule,
   ],
   providers: [
     {
