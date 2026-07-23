@@ -8,12 +8,14 @@ import { CredentialSharing } from '@/components/credential-sharing';
 import { NotificationBell } from '@/components/NotificationBell';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
+import { CredentialAnalyticsDashboard } from '@/components/credential-analytics-dashboard';
 
 const TABS = [
   { id: 'vault', label: 'Health Credential Vault' },
   { id: 'verification', label: 'Vaccination Verification' },
   { id: 'sharing', label: 'Credential Sharing' },
   { id: 'notifications', label: 'Notification Settings' },
+  { id: 'analytics', label: 'Analytics Dashboard' },
 ];
 
 export default function Home() {
@@ -125,6 +127,7 @@ export default function Home() {
               )}
               {activeTab === 'sharing' && <CredentialSharing walletAddress={walletAddress} />}
               {activeTab === 'notifications' && <NotificationPreferences />}
+              {activeTab === 'analytics' && <CredentialAnalyticsDashboard />}
             </div>
           </>
         ) : (
