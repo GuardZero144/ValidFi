@@ -18,6 +18,8 @@ export enum AuditOperation {
   DELETED = 'deleted',
   SHARED = 'shared',
   ACCESSED = 'accessed',
+  ROLE_ASSIGNED = 'role_assigned',
+  ROLE_REVOKED = 'role_revoked',
 }
 
 /**

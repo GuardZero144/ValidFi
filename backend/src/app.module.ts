@@ -19,6 +19,7 @@ import { HealthModule } from './health/health.module';
 import { AuditModule } from './audit/audit.module';
 import { BackupModule } from './backup/backup.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     AuditModule,
     BackupModule,
     AnalyticsModule,
+    PermissionsModule,
   ],
   providers: [
     {
