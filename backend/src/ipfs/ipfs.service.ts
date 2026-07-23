@@ -67,4 +67,25 @@ export class IpfsService {
     const result = await this.pinata.testAuthentication();
     return result.authenticated;
   }
+
+  async uploadJson(data: unknown): Promise<string> {
+    this.ensureClient();
+    try {
+      const result = await this.pinata.pinJSONToIPFS(data, {
+        pinataMetadata: { name: `backup-${Date.now()}` },
+      });
+      return result.IpfsHash;
+    } catch (error) {
+      throw new InternalServerErrorException(`Failed to upload JSON to IPFS: ${(error as Error).message}`);
+    }
+  }
+
+  async fetchJson(cid: string): Promise<any> {
+    const url = this.getGatewayUrl(cid);
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new InternalServerErrorException(`Failed to fetch JSON from IPFS: ${res.statusText}`);
+    }
+    return res.json();
+  }
 }
