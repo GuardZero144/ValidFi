@@ -30,4 +30,6 @@ pub enum Error {
     PermissionDenied = 21,
     ShareExpired = 22,
     CannotReShare = 23,
+    // Credential metadata errors
+    MetadataNotFound = 24,
 }

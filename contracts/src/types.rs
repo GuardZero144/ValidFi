@@ -38,3 +38,21 @@ pub struct AuditRecord {
     pub timestamp: u64,
     pub details: String,
 }
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CredentialMetadata {
+    pub credential_id: BytesN<32>,
+    pub owner: Address,
+    pub metadata: String,
+    pub updated_at: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MetadataEvent {
+    pub credential_id: BytesN<32>,
+    pub owner: Address,
+    pub action: Symbol,
+    pub timestamp: u64,
+}

@@ -13,3 +13,8 @@ pub enum SharingDataKey {
     ByOwner(Address),
     ByRecipient(Address),
 }
+
+#[contracttype]
+pub enum MetadataDataKey {
+    Metadata(BytesN<32>),
+}
