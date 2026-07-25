@@ -14,11 +14,14 @@ pub struct VerificationRecord {
     pub revoked: bool,
     pub revoked_at: u64,
     pub revocation_reason: String,
+    pub locked_until: u64,
 }
 
 #[contracttype]
 pub enum VerificationEvent {
     VerificationRevoked,
+    CredentialLocked,
+    CredentialUnlocked,
 }
 
 /// Typed storage keys.
@@ -83,6 +86,7 @@ impl Verification {
             revoked: false,
             revoked_at: 0,
             revocation_reason: String::from_str(env, ""),
+            locked_until: 0,
         };
 
         env.storage()
@@ -206,7 +210,64 @@ impl Verification {
 
     pub fn is_verification_valid(env: &Env, verification_id: u64) -> Result<bool, Error> {
         let record = read_record(env, verification_id)?;
-        Ok(record.status == String::from_str(env, "approved") && !record.revoked)
+        Ok(record.status == String::from_str(env, "approved")
+            && !record.revoked
+            && !is_locked_at(&record, env.ledger().timestamp()))
+    }
+
+    /// Lock a credential until `duration_seconds` have elapsed. The verifier
+    /// that submitted the credential controls its lock state.
+    pub fn lock_credential(
+        env: &Env,
+        verification_id: u64,
+        duration_seconds: u64,
+    ) -> Result<(), Error> {
+        if duration_seconds == 0 {
+            return Err(Error::InvalidLockDuration);
+        }
+        let mut record = read_record(env, verification_id)?;
+        record.verifier.require_auth();
+        record.locked_until = env
+            .ledger()
+            .timestamp()
+            .checked_add(duration_seconds)
+            .ok_or(Error::InvalidLockDuration)?;
+        write_record(env, verification_id, &record);
+        env.events().publish(
+            (String::from_str(env, "credential_lock"), verification_id),
+            VerificationEvent::CredentialLocked,
+        );
+        Ok(())
+    }
+
+    /// Clear a lock after it has expired. This is intentionally permissionless
+    /// so an expired credential cannot remain logically locked forever if no
+    /// one submits a follow-up transaction.
+    pub fn unlock_credential(env: &Env, verification_id: u64) -> Result<(), Error> {
+        let mut record = read_record(env, verification_id)?;
+        if is_locked_at(&record, env.ledger().timestamp()) {
+            return Err(Error::CredentialLocked);
+        }
+        if record.locked_until != 0 {
+            record.locked_until = 0;
+            write_record(env, verification_id, &record);
+            env.events().publish(
+                (String::from_str(env, "credential_unlock"), verification_id),
+                VerificationEvent::CredentialUnlocked,
+            );
+        }
+        Ok(())
+    }
+
+    /// Return whether a credential is currently locked by ledger time.
+    pub fn is_credential_locked(env: &Env, verification_id: u64) -> Result<bool, Error> {
+        let record = read_record(env, verification_id)?;
+        Ok(is_locked_at(&record, env.ledger().timestamp()))
+    }
+
+    /// Return the lock expiry timestamp, or zero when no lock is active.
+    pub fn get_lock_expiry(env: &Env, verification_id: u64) -> Result<u64, Error> {
+        Ok(read_record(env, verification_id)?.locked_until)
     }
 }
 
@@ -230,6 +291,10 @@ fn write_record(env: &Env, verification_id: u64, record: &VerificationRecord) {
     let key = DataKey::Record(verification_id);
     env.storage().persistent().set(&key, record);
     bump_persistent(env, &key);
+}
+
+fn is_locked_at(record: &VerificationRecord, timestamp: u64) -> bool {
+    record.locked_until != 0 && timestamp < record.locked_until
 }
 
 fn bump_persistent(env: &Env, key: &DataKey) {

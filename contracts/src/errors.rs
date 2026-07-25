@@ -30,4 +30,6 @@ pub enum Error {
     PermissionDenied = 21,
     ShareExpired = 22,
     CannotReShare = 23,
+    CredentialLocked = 24,
+    InvalidLockDuration = 25,
 }
