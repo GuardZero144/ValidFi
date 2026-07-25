@@ -13,3 +13,8 @@ pub enum SharingDataKey {
     ByOwner(Address),
     ByRecipient(Address),
 }
+
+#[contracttype]
+pub enum AccessDataKey {
+    Logs(Address, u64),
+}

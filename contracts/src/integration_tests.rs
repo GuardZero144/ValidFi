@@ -493,6 +493,77 @@ fn test_get_permission() {
     assert!(perm.is_active);
 }
 
+#[test]
+fn test_access_log_records_grant_and_check() {
+    let (env, _, _, access, _, _) = setup();
+    let grantor = Address::generate(&env);
+    let grantee = Address::generate(&env);
+
+    access.grant_access(&grantor, &grantee, &1, &3600);
+    assert!(access.check_access(&grantee, &1));
+
+    let logs = access.get_access_logs(&grantee, &1);
+    assert_eq!(logs.len(), 2);
+    assert_eq!(
+        logs.get(0).unwrap().action,
+        soroban_sdk::Symbol::new(&env, "granted")
+    );
+    assert_eq!(
+        logs.get(1).unwrap().action,
+        soroban_sdk::Symbol::new(&env, "checked")
+    );
+}
+
+#[test]
+fn test_access_log_records_denied_check() {
+    let (env, _, _, access, _, _) = setup();
+    let grantee = Address::generate(&env);
+
+    assert!(!access.check_access(&grantee, &999));
+
+    let logs = access.get_access_logs(&grantee, &999);
+    assert_eq!(logs.len(), 1);
+    assert_eq!(
+        logs.get(0).unwrap().action,
+        soroban_sdk::Symbol::new(&env, "denied")
+    );
+}
+
+#[test]
+fn test_access_log_records_revoke_and_extend() {
+    let (env, _, _, access, _, _) = setup();
+    let grantor = Address::generate(&env);
+    let grantee = Address::generate(&env);
+
+    let pid = access.grant_access(&grantor, &grantee, &7, &3600);
+    access.extend_access(&pid, &100);
+    access.revoke_access(&pid);
+
+    let logs = access.get_access_logs(&grantee, &7);
+    assert_eq!(logs.len(), 3);
+    assert_eq!(
+        logs.get(0).unwrap().action,
+        soroban_sdk::Symbol::new(&env, "granted")
+    );
+    assert_eq!(
+        logs.get(1).unwrap().action,
+        soroban_sdk::Symbol::new(&env, "extended")
+    );
+    assert_eq!(
+        logs.get(2).unwrap().action,
+        soroban_sdk::Symbol::new(&env, "revoked")
+    );
+}
+
+#[test]
+fn test_access_log_empty_for_unseen_resource() {
+    let (env, _, _, access, _, _) = setup();
+    let grantee = Address::generate(&env);
+
+    let logs = access.get_access_logs(&grantee, &123);
+    assert_eq!(logs.len(), 0);
+}
+
 // ── Data Sharing Integration ─────────────────────────────────────────────────
 
 #[test]
