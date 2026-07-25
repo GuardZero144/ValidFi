@@ -38,3 +38,12 @@ pub struct AuditRecord {
     pub timestamp: u64,
     pub details: String,
 }
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccessLogEntry {
+    pub grantee: Address,
+    pub resource_id: u64,
+    pub action: Symbol,
+    pub timestamp: u64,
+}

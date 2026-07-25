@@ -1,6 +1,8 @@
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, Vec};
 
 use crate::errors::Error;
+use crate::storage::AccessDataKey;
+use crate::types::AccessLogEntry;
 
 #[contracttype]
 #[derive(Clone)]
@@ -51,7 +53,9 @@ impl AccessControl {
             .set(&(permission_id, "permission"), &permission);
         env.storage()
             .instance()
-            .set(&(grantee, resource_id), &permission_id);
+            .set(&(grantee.clone(), resource_id), &permission_id);
+
+        Self::log_access(env, grantee, resource_id, Symbol::new(env, "granted"));
 
         permission_id
     }
@@ -69,22 +73,47 @@ impl AccessControl {
         env.storage()
             .instance()
             .set(&(permission_id, "permission"), &permission);
+
+        Self::log_access(
+            env,
+            permission.grantee.clone(),
+            permission.resource_id,
+            Symbol::new(env, "revoked"),
+        );
+
         Ok(())
     }
 
     pub fn check_access(env: &Env, grantee: Address, resource_id: u64) -> bool {
-        let permission_id: u64 = match env.storage().instance().get(&(grantee, resource_id)) {
+        let permission_id: u64 = match env
+            .storage()
+            .instance()
+            .get(&(grantee.clone(), resource_id))
+        {
             Some(id) => id,
-            None => return false,
+            None => {
+                Self::log_access(env, grantee, resource_id, Symbol::new(env, "denied"));
+                return false;
+            }
         };
 
         let permission: AccessPermission =
             match env.storage().instance().get(&(permission_id, "permission")) {
                 Some(p) => p,
-                None => return false,
+                None => {
+                    Self::log_access(env, grantee, resource_id, Symbol::new(env, "denied"));
+                    return false;
+                }
             };
 
-        permission.is_active && env.ledger().timestamp() <= permission.access_expiry
+        let allowed = permission.is_active && env.ledger().timestamp() <= permission.access_expiry;
+        Self::log_access(
+            env,
+            grantee,
+            resource_id,
+            Symbol::new(env, if allowed { "checked" } else { "denied" }),
+        );
+        allowed
     }
 
     pub fn get_permission(env: &Env, permission_id: u64) -> Result<AccessPermission, Error> {
@@ -111,6 +140,39 @@ impl AccessControl {
         env.storage()
             .instance()
             .set(&(permission_id, "permission"), &permission);
+
+        Self::log_access(
+            env,
+            permission.grantee.clone(),
+            permission.resource_id,
+            Symbol::new(env, "extended"),
+        );
+
         Ok(())
+    }
+
+    /// Append an entry to the access log for (grantee, resource_id).
+    fn log_access(env: &Env, grantee: Address, resource_id: u64, action: Symbol) {
+        let entry = AccessLogEntry {
+            grantee: grantee.clone(),
+            resource_id,
+            action,
+            timestamp: env.ledger().timestamp(),
+        };
+
+        let mut logs = Self::get_access_logs(env, grantee.clone(), resource_id);
+        logs.push_back(entry);
+
+        env.storage()
+            .persistent()
+            .set(&AccessDataKey::Logs(grantee, resource_id), &logs);
+    }
+
+    /// Retrieve the full access log for (grantee, resource_id), oldest first.
+    pub fn get_access_logs(env: &Env, grantee: Address, resource_id: u64) -> Vec<AccessLogEntry> {
+        env.storage()
+            .persistent()
+            .get(&AccessDataKey::Logs(grantee, resource_id))
+            .unwrap_or(Vec::new(env))
     }
 }
