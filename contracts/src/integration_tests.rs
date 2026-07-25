@@ -671,6 +671,26 @@ fn test_full_credential_lifecycle() {
     assert!(!sharing.is_share_active(&share_id));
 }
 
+#[test]
+fn test_credential_time_locking() {
+    let (env, _, verification, _, _, _) = setup();
+    let verifier = Address::generate(&env);
+    let proof_hash = BytesN::from_array(&env, &[7u8; 32]);
+    let commitment = BytesN::from_array(&env, &[8u8; 32]);
+    let verification_id = verification.submit_proof(&1, &verifier, &proof_hash, &commitment);
+
+    let start = env.ledger().timestamp();
+    verification.lock_credential(&verification_id, &100);
+    assert!(verification.is_credential_locked(&verification_id));
+    assert_eq!(verification.get_lock_expiry(&verification_id), start + 100);
+    assert!(!verification.is_verification_valid(&verification_id));
+
+    env.ledger().set_timestamp(start + 101);
+    assert!(!verification.is_credential_locked(&verification_id));
+    verification.unlock_credential(&verification_id);
+    assert_eq!(verification.get_lock_expiry(&verification_id), 0);
+}
+
 // ── Error Scenarios ───────────────────────────────────────────────────────────
 
 #[test]
