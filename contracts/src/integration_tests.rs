@@ -1,7 +1,7 @@
 extern crate std;
 
 use soroban_sdk::{
-    testutils::{Address as _, Ledger},
+    testutils::{Address as _, Events, Ledger},
     Address, Bytes, BytesN, Env, String,
 };
 
@@ -182,6 +182,42 @@ fn test_submit_and_reject_verification() {
     verification.reject_verification(&v_id, &reason);
     let rejected = verification.get_verification(&v_id);
     assert_eq!(rejected.status, String::from_str(&env, "rejected"));
+}
+
+#[test]
+fn test_approve_verification_emits_event() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmEvt1"));
+    let proof_hash = BytesN::from_array(&env, &[42u8; 32]);
+    let commitment = BytesN::from_array(&env, &[99u8; 32]);
+    let v_id = verification.submit_proof(&identity_id, &verifier, &proof_hash, &commitment);
+
+    let events_before = env.events().all().len();
+    verification.approve_verification(&v_id);
+    assert_eq!(env.events().all().len(), events_before + 1);
+}
+
+#[test]
+fn test_reject_verification_emits_event() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmEvt2"));
+    let proof_hash = BytesN::from_array(&env, &[42u8; 32]);
+    let commitment = BytesN::from_array(&env, &[99u8; 32]);
+    let v_id = verification.submit_proof(&identity_id, &verifier, &proof_hash, &commitment);
+
+    let events_before = env.events().all().len();
+    verification.reject_verification(&v_id, &String::from_str(&env, "insufficient_proof"));
+    assert_eq!(env.events().all().len(), events_before + 1);
 }
 
 #[test]

@@ -18,7 +18,9 @@ pub struct VerificationRecord {
 
 #[contracttype]
 pub enum VerificationEvent {
-    VerificationRevoked,
+    Approved,
+    Rejected,
+    Revoked,
 }
 
 /// Typed storage keys.
@@ -106,6 +108,12 @@ impl Verification {
         record.status = String::from_str(env, "approved");
 
         write_record(env, verification_id, &record);
+
+        env.events().publish(
+            (String::from_str(env, "approval"), verification_id),
+            VerificationEvent::Approved,
+        );
+
         Ok(())
     }
 
@@ -124,6 +132,12 @@ impl Verification {
         let reason_key = DataKey::RejectReason(verification_id);
         env.storage().persistent().set(&reason_key, &reason);
         bump_persistent(env, &reason_key);
+
+        env.events().publish(
+            (String::from_str(env, "rejection"), verification_id),
+            VerificationEvent::Rejected,
+        );
+
         Ok(())
     }
 
@@ -178,7 +192,7 @@ impl Verification {
         // Emit revocation event
         env.events().publish(
             (String::from_str(env, "revocation"), verification_id),
-            VerificationEvent::VerificationRevoked,
+            VerificationEvent::Revoked,
         );
 
         Ok(())
