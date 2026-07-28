@@ -12,6 +12,7 @@ import { WalletStrategy } from './strategies/wallet.strategy';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
+      // @ts-ignore
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {

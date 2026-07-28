@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Identity } from './identity.entity';
+import { AiService } from '../ai/ai.service';
+import { IpfsService } from '../ipfs/ipfs.service';
 import { CreateIdentityDto } from './dto/create-identity.dto';
 import { UpdateIdentityDto } from './dto/update-identity.dto';
 import { PaginateIdentityDto } from './dto/paginate-identity.dto';
@@ -18,6 +20,8 @@ export class IdentityService {
   constructor(
     @InjectRepository(Identity)
     private readonly identityRepository: Repository<Identity>,
+    private readonly aiService: AiService,
+    private readonly ipfsService: IpfsService,
   ) {}
 
   async create(createIdentityDto: CreateIdentityDto): Promise<Identity> {
@@ -70,6 +74,21 @@ export class IdentityService {
   async remove(id: string): Promise<void> {
     const identity = await this.findOne(id);
     await this.identityRepository.remove(identity);
+  }
+
+  async detectFraud(id: string): Promise<Identity> {
+    const identity = await this.findOne(id);
+    const credentialData = await this.ipfsService.fetchJson(identity.ipfsCid);
+    const fraudResult = await this.aiService.detectFraud(credentialData);
+    
+    identity.metadata = {
+      ...(identity.metadata || {}),
+      fraudScore: fraudResult.fraudScore,
+      isFlagged: fraudResult.isFlagged,
+      suspiciousPatterns: fraudResult.suspiciousPatterns,
+    };
+    
+    return await this.identityRepository.save(identity);
   }
 
   async findByDocumentHash(documentHash: string): Promise<Identity> {

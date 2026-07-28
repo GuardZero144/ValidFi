@@ -53,6 +53,7 @@ import { PermissionsModule } from './permissions/permissions.module';
     }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
+      // @ts-ignore
       useFactory: (configService: ConfigService) => ({
         store: redisStore,
         host: configService.get('REDIS_HOST'),
