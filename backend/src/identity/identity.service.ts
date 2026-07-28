@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as crypto from 'crypto';
 import { Identity } from './identity.entity';
+import { IpfsService } from '../ipfs/ipfs.service';
 import { CreateIdentityDto } from './dto/create-identity.dto';
 import { UpdateIdentityDto } from './dto/update-identity.dto';
 import { PaginateIdentityDto } from './dto/paginate-identity.dto';
@@ -18,6 +20,7 @@ export class IdentityService {
   constructor(
     @InjectRepository(Identity)
     private readonly identityRepository: Repository<Identity>,
+    private readonly ipfsService: IpfsService,
   ) {}
 
   async create(createIdentityDto: CreateIdentityDto): Promise<Identity> {
@@ -95,5 +98,28 @@ export class IdentityService {
 
     const identity = this.identityRepository.create(data);
     return await this.identityRepository.save(identity);
+  }
+
+  async verifyIntegrity(id: string): Promise<{ valid: boolean; reason?: string }> {
+    const identity = await this.findOne(id);
+    
+    let ipfsData;
+    try {
+      ipfsData = await this.ipfsService.fetchJson(identity.ipfsCid);
+    } catch (error) {
+      return { valid: false, reason: 'Failed to fetch data from IPFS' };
+    }
+
+    const jsonContent = JSON.stringify(ipfsData, null, 2);
+    const checksum = crypto
+      .createHash('sha256')
+      .update(jsonContent)
+      .digest('hex');
+
+    if (checksum !== identity.documentHash) {
+      return { valid: false, reason: 'Credential data integrity check failed: hash mismatch' };
+    }
+
+    return { valid: true };
   }
 }
