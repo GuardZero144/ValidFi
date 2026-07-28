@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Identity } from './identity.entity';
 import { CreateIdentityDto } from './dto/create-identity.dto';
 import { UpdateIdentityDto } from './dto/update-identity.dto';
@@ -61,10 +61,45 @@ export class IdentityService {
     return await this.identityRepository.save(identity);
   }
 
-  async revoke(id: string): Promise<Identity> {
+  async revoke(id: string, reason?: string): Promise<Identity> {
     const identity = await this.findOne(id);
     identity.revoked = true;
+    if (reason) identity.revocationReason = reason;
     return await this.identityRepository.save(identity);
+  }
+
+  async bulkRevoke(ids: string[], reason?: string): Promise<Identity[]> {
+    const identities = await this.identityRepository.find({
+      where: { id: In(ids) },
+    });
+    for (const identity of identities) {
+      identity.revoked = true;
+      if (reason) identity.revocationReason = reason;
+    }
+    return await this.identityRepository.save(identities);
+  }
+
+  async getRevocationList(pagination?: PaginateIdentityDto): Promise<PaginatedResult<Identity>> {
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.identityRepository.findAndCount({
+      where: { revoked: true },
+      order: { updatedAt: 'DESC' },
+      skip,
+      take: limit,
+    });
+
+    return { data, total, page, lastPage: Math.ceil(total / limit) };
+  }
+
+  async getRevocationStatus(id: string): Promise<{ revoked: boolean; reason: string | null }> {
+    const identity = await this.findOne(id);
+    return {
+      revoked: identity.revoked,
+      reason: identity.revocationReason || null,
+    };
   }
 
   async remove(id: string): Promise<void> {
