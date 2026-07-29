@@ -108,6 +108,38 @@ impl IdentityRegistry {
         Ok(())
     }
 
+    pub fn delete_identity(env: &Env, identity_id: u64) -> Result<(), Error> {
+        let owner: Address = env
+            .storage()
+            .instance()
+            .get(&(identity_id, "owner"))
+            .ok_or(Error::IdentityNotFound)?;
+
+        owner.require_auth();
+
+        let identity: Identity = env
+            .storage()
+            .instance()
+            .get(&(identity_id, "identity"))
+            .ok_or(Error::IdentityNotFound)?;
+
+        // Securely delete credentials and remove all copies
+        env.storage().instance().remove(&(identity_id, "identity"));
+        env.storage().instance().remove(&(identity_id, "owner"));
+        env.storage().instance().remove(&(owner.clone(), identity.document_hash.clone()));
+
+        // Maintain audit trail
+        crate::auditing::Auditing::log_audit_event(
+            env.clone(),
+            identity.document_hash.clone(),
+            owner.clone(),
+            soroban_sdk::Symbol::new(env, "deleted"),
+            soroban_sdk::String::from_str(env, "Credential securely deleted and all copies removed"),
+        );
+
+        Ok(())
+    }
+
     pub fn get_identity(env: &Env, identity_id: u64) -> Result<Identity, Error> {
         env.storage()
             .instance()
