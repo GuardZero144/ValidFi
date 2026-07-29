@@ -92,6 +92,21 @@ fn test_revoke_identity_marks_as_revoked() {
 }
 
 #[test]
+#[should_panic(expected = "HostError")]
+fn test_delete_identity_removes_records() {
+    let (env, identity, _, _, _, _) = setup();
+    let owner = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+    let cid = String::from_str(&env, "QmDeleteMe");
+
+    let id = identity.register_identity(&owner, &doc_hash, &cid);
+    identity.delete_identity(&id);
+    
+    // Should panic because it was deleted
+    identity.get_identity(&id);
+}
+
+#[test]
 fn test_register_multiple_identities_same_owner() {
     let (env, identity, _, _, _, _) = setup();
     let owner = Address::generate(&env);
