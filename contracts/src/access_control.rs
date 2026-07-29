@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env};
+use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, Vec};
 
 use crate::errors::Error;
 
@@ -12,6 +12,47 @@ pub struct AccessPermission {
     pub is_active: bool,
     pub granted_at: u64,
 }
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AccessAction {
+    Granted,
+    Revoked,
+    Extended,
+}
+
+#[contracttype]
+#[derive(Clone)]
+pub struct AccessHistoryEntry {
+    pub permission_id: u64,
+    pub grantee: Address,
+    pub resource_id: u64,
+    pub actor: Address,
+    pub action: AccessAction,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+pub enum AccessControlEvent {
+    Granted,
+    Revoked,
+    Extended,
+}
+
+/// Typed key for the append-only per-permission history log. Kept as its own
+/// `contracttype` (rather than reusing the ad hoc tuple/string keys below) so
+/// it lives in a distinct storage namespace and can't collide with them.
+#[contracttype]
+pub enum AccessDataKey {
+    History(u64),
+}
+
+// History entries live in persistent storage (unlike the existing
+// instance-storage permission records above) so reading/writing a
+// permission's history doesn't serialize the contract's entire instance
+// data set. See tooling/sanctifier's PERFORMANCE.md pattern this mirrors.
+const HISTORY_TTL_THRESHOLD: u32 = 17_280; // ~1 day
+const HISTORY_TTL_EXTEND: u32 = 535_680; // ~31 days
 
 #[contract]
 pub struct AccessControl;
@@ -34,13 +75,14 @@ impl AccessControl {
             .unwrap_or(0u64)
             + 1;
 
+        let granted_at = env.ledger().timestamp();
         let permission = AccessPermission {
             grantor: grantor.clone(),
             grantee: grantee.clone(),
             resource_id,
-            access_expiry: env.ledger().timestamp() + duration_seconds,
+            access_expiry: granted_at + duration_seconds,
             is_active: true,
-            granted_at: env.ledger().timestamp(),
+            granted_at,
         };
 
         env.storage()
@@ -51,7 +93,20 @@ impl AccessControl {
             .set(&(permission_id, "permission"), &permission);
         env.storage()
             .instance()
-            .set(&(grantee, resource_id), &permission_id);
+            .set(&(grantee.clone(), resource_id), &permission_id);
+
+        record_history(
+            env,
+            permission_id,
+            grantee,
+            resource_id,
+            grantor,
+            AccessAction::Granted,
+        );
+        env.events().publish(
+            (symbol_short!("acc_hist"), permission_id),
+            AccessControlEvent::Granted,
+        );
 
         permission_id
     }
@@ -69,6 +124,20 @@ impl AccessControl {
         env.storage()
             .instance()
             .set(&(permission_id, "permission"), &permission);
+
+        record_history(
+            env,
+            permission_id,
+            permission.grantee.clone(),
+            permission.resource_id,
+            permission.grantor.clone(),
+            AccessAction::Revoked,
+        );
+        env.events().publish(
+            (symbol_short!("acc_hist"), permission_id),
+            AccessControlEvent::Revoked,
+        );
+
         Ok(())
     }
 
@@ -111,6 +180,60 @@ impl AccessControl {
         env.storage()
             .instance()
             .set(&(permission_id, "permission"), &permission);
+
+        record_history(
+            env,
+            permission_id,
+            permission.grantee.clone(),
+            permission.resource_id,
+            permission.grantor.clone(),
+            AccessAction::Extended,
+        );
+        env.events().publish(
+            (symbol_short!("acc_hist"), permission_id),
+            AccessControlEvent::Extended,
+        );
+
         Ok(())
     }
+
+    /// Full grant/revoke/extend history for a permission, oldest first.
+    pub fn get_access_history(env: &Env, permission_id: u64) -> Vec<AccessHistoryEntry> {
+        env.storage()
+            .persistent()
+            .get(&AccessDataKey::History(permission_id))
+            .unwrap_or(Vec::new(env))
+    }
+}
+
+// ── Storage helpers ─────────────────────────────────────────────────────────
+
+fn record_history(
+    env: &Env,
+    permission_id: u64,
+    grantee: Address,
+    resource_id: u64,
+    actor: Address,
+    action: AccessAction,
+) {
+    let key = AccessDataKey::History(permission_id);
+    let mut history: Vec<AccessHistoryEntry> = env
+        .storage()
+        .persistent()
+        .get(&key)
+        .unwrap_or(Vec::new(env));
+
+    history.push_back(AccessHistoryEntry {
+        permission_id,
+        grantee,
+        resource_id,
+        actor,
+        action,
+        timestamp: env.ledger().timestamp(),
+    });
+
+    env.storage().persistent().set(&key, &history);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, HISTORY_TTL_THRESHOLD, HISTORY_TTL_EXTEND);
 }
