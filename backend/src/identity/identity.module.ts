@@ -5,8 +5,11 @@ import { IdentityController } from './identity.controller';
 import { Identity } from './identity.entity';
 import { IpfsModule } from '../ipfs/ipfs.module';
 
+import { AiModule } from '../ai/ai.module';
+import { IpfsModule } from '../ipfs/ipfs.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Identity]), IpfsModule],
+  imports: [TypeOrmModule.forFeature([Identity]), AiModule, IpfsModule],
   controllers: [IdentityController],
   providers: [IdentityService],
   exports: [IdentityService],

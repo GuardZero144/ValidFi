@@ -3,8 +3,9 @@ use soroban_sdk::{
 };
 
 use crate::errors::Error;
+use crate::events::emit_audit_event;
 use crate::storage::SharingDataKey;
-use crate::types::{CredentialShareEvent, SharingPermission};
+use crate::types::{AuditRecord, CredentialShareEvent, SharingPermission};
 
 #[contracttype]
 #[derive(Clone)]
@@ -219,7 +220,7 @@ impl DataSharing {
         let shares: Vec<u64> = env
             .storage()
             .persistent()
-            .get(&SharingDataKey::ByRecipient(grantee))
+            .get(&SharingDataKey::ByRecipient(grantee.clone()))
             .unwrap_or(Vec::new(env));
 
         for i in 0..shares.len() {
@@ -229,11 +230,37 @@ impl DataSharing {
                         && share.is_active
                         && env.ledger().timestamp() <= share.access_expiry
                     {
+                        emit_audit_event(
+                            env,
+                            grantee.clone(),
+                            AuditRecord {
+                                credential_id: credential_hash.clone(),
+                                actor: grantee.clone(),
+                                action: Symbol::new(env, "accessed"),
+                                timestamp: env.ledger().timestamp(),
+                                details: String::from_str(
+                                    env,
+                                    "Credential access granted via share",
+                                ),
+                            },
+                        );
                         return true;
                     }
                 }
             }
         }
+
+        emit_audit_event(
+            env,
+            grantee.clone(),
+            AuditRecord {
+                credential_id: credential_hash.clone(),
+                actor: grantee.clone(),
+                action: Symbol::new(env, "access_denied"),
+                timestamp: env.ledger().timestamp(),
+                details: String::from_str(env, "Credential access denied"),
+            },
+        );
         false
     }
 

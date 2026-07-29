@@ -26,6 +26,8 @@ pub enum AuditEventType {
     CredentialUpdated,
     CredentialRevoked,
     CredentialVerified,
+    CredentialAccessed,
+    CredentialAccessDenied,
     SuspiciousActivityDetected,
 }
 
