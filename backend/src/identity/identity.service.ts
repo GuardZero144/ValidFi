@@ -150,4 +150,27 @@ export class IdentityService {
     const identity = this.identityRepository.create(data);
     return await this.identityRepository.save(identity);
   }
+
+  async verifyIntegrity(id: string): Promise<{ valid: boolean; reason?: string }> {
+    const identity = await this.findOne(id);
+    
+    let ipfsData;
+    try {
+      ipfsData = await this.ipfsService.fetchJson(identity.ipfsCid);
+    } catch (error) {
+      return { valid: false, reason: 'Failed to fetch data from IPFS' };
+    }
+
+    const jsonContent = JSON.stringify(ipfsData, null, 2);
+    const checksum = crypto
+      .createHash('sha256')
+      .update(jsonContent)
+      .digest('hex');
+
+    if (checksum !== identity.documentHash) {
+      return { valid: false, reason: 'Credential data integrity check failed: hash mismatch' };
+    }
+
+    return { valid: true };
+  }
 }

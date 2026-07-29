@@ -71,4 +71,10 @@ export class IdentityController {
   remove(@Param('id') id: string) {
     return this.identityService.remove(id);
   }
+
+  @Get(':id/verify-integrity')
+  @Audit(AuditOperation.VERIFIED)
+  verifyIntegrity(@Param('id') id: string) {
+    return this.identityService.verifyIntegrity(id);
+  }
 }

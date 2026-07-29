@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { IdentityService } from './identity.service';
 import { IdentityController } from './identity.controller';
 import { Identity } from './identity.entity';
+import { IpfsModule } from '../ipfs/ipfs.module';
 
 import { AiModule } from '../ai/ai.module';
 import { IpfsModule } from '../ipfs/ipfs.module';
