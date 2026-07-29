@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { Upload, Shield, FileText, Trash2, Syringe } from 'lucide-react';
+import { Upload, Shield, Trash2, Syringe, Eye, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedProgress, SuccessOverlay, SuccessToast } from './animations';
 import { DeletionConfirmationModal } from './deletion-confirmation-modal';
+import { CredentialDetailsModal } from './credential-details-modal';
+import { CredentialEditModal } from './credential-edit-modal';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 
 interface HealthCredentialVaultProps {
@@ -28,6 +30,11 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
   });
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
   const [credentialToDelete, setCredentialToDelete] = useState<Credential | null>(null);
+  
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
+  
   const [deletionStatus, setDeletionStatus] = useState<'idle' | 'deleting' | 'deleted' | 'failed' | 'undoable'>('idle');
   const { announceToScreenReader } = useAccessibility();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -228,18 +235,44 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
                     </p>
                   </div>
                 </div>
-                <motion.button
-                  className="text-red-400 hover:text-red-300 transition-colors"
-                  onClick={() => handleDelete(credential)}
-                  onKeyDown={(e) =>
-                    handleKeyDown(e, () => handleDelete(credential))
-                  }
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  aria-label={`Delete ${credential.vaccineType} credential`}
-                >
-                  <Trash2 className="w-5 h-5" aria-hidden="true" />
-                </motion.button>
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                    onClick={() => {
+                      setSelectedCredential(credential);
+                      setIsDetailsModalOpen(true);
+                    }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    aria-label={`View details of ${credential.vaccineType} credential`}
+                  >
+                    <Eye className="w-5 h-5" aria-hidden="true" />
+                  </motion.button>
+                  <motion.button
+                    className="text-yellow-400 hover:text-yellow-300 transition-colors"
+                    onClick={() => {
+                      setSelectedCredential(credential);
+                      setIsEditModalOpen(true);
+                    }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    aria-label={`Edit ${credential.vaccineType} credential`}
+                  >
+                    <Edit2 className="w-5 h-5" aria-hidden="true" />
+                  </motion.button>
+                  <motion.button
+                    className="text-red-400 hover:text-red-300 transition-colors"
+                    onClick={() => handleDelete(credential)}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => handleDelete(credential))
+                    }
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    aria-label={`Delete ${credential.vaccineType} credential`}
+                  >
+                    <Trash2 className="w-5 h-5" aria-hidden="true" />
+                  </motion.button>
+                </div>
               </motion.div>
             ))
           )}
@@ -265,6 +298,34 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
         onCancel={handleCancelDelete}
         onUndo={handleUndoDelete}
         deletionStatus={deletionStatus}
+      />
+
+      <CredentialDetailsModal
+        isOpen={isDetailsModalOpen}
+        credential={selectedCredential}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedCredential(null);
+        }}
+      />
+
+      <CredentialEditModal
+        isOpen={isEditModalOpen}
+        credential={selectedCredential}
+        onSave={(updatedCredential) => {
+          setCredentials((prev) =>
+            prev.map((c) => (c.id === updatedCredential.id ? updatedCredential : c))
+          );
+          setToast({
+            show: true,
+            title: 'Credential Updated',
+            description: 'Metadata has been successfully saved',
+          });
+        }}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedCredential(null);
+        }}
       />
     </div>
   );
