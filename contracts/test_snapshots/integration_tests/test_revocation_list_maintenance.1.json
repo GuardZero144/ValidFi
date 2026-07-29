@@ -1176,7 +1176,7 @@
             "data": {
               "vec": [
                 {
-                  "symbol": "VerificationRevoked"
+                  "symbol": "Revoked"
                 }
               ]
             }
@@ -1308,7 +1308,7 @@
             "data": {
               "vec": [
                 {
-                  "symbol": "VerificationRevoked"
+                  "symbol": "Revoked"
                 }
               ]
             }
