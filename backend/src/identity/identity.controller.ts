@@ -61,6 +61,11 @@ export class IdentityController {
     return this.identityService.getRevocationStatus(id);
   }
 
+  @Get(':id/fraud-detection')
+  detectFraud(@Param('id') id: string) {
+    return this.identityService.detectFraud(id);
+  }
+
   @Delete(':id')
   @Audit(AuditOperation.DELETED)
   remove(@Param('id') id: string) {
