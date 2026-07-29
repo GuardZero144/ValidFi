@@ -9,6 +9,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { CredentialAnalyticsDashboard } from '@/components/credential-analytics-dashboard';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 const TABS = [
   { id: 'vault', label: 'Health Credential Vault' },
@@ -121,13 +122,15 @@ export default function Home() {
               aria-labelledby={`tab-${activeTab}`}
               className="bg-white/10 backdrop-blur-lg rounded-lg p-6"
             >
-              {activeTab === 'vault' && <HealthCredentialVault walletAddress={walletAddress} />}
-              {activeTab === 'verification' && (
-                <VaccinationVerificationCenter walletAddress={walletAddress} />
-              )}
-              {activeTab === 'sharing' && <CredentialSharing walletAddress={walletAddress} />}
-              {activeTab === 'notifications' && <NotificationPreferences />}
-              {activeTab === 'analytics' && <CredentialAnalyticsDashboard />}
+              <ErrorBoundary>
+                {activeTab === 'vault' && <HealthCredentialVault walletAddress={walletAddress} />}
+                {activeTab === 'verification' && (
+                  <VaccinationVerificationCenter walletAddress={walletAddress} />
+                )}
+                {activeTab === 'sharing' && <CredentialSharing walletAddress={walletAddress} />}
+                {activeTab === 'notifications' && <NotificationPreferences />}
+                {activeTab === 'analytics' && <CredentialAnalyticsDashboard />}
+              </ErrorBoundary>
             </div>
           </>
         ) : (

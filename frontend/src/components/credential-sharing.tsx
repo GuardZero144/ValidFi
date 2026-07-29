@@ -5,6 +5,8 @@ import { Share2, Lock, Clock, X, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedProgress, SuccessOverlay, SuccessToast } from './animations';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
+import { useCredentialOperation } from '@/hooks/useCredentialOperation';
+import { AlertCircle } from 'lucide-react';
 
 interface CredentialSharingProps {
   walletAddress: string;
@@ -19,7 +21,6 @@ interface SharedCredential {
 
 export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
   const [sharedCredentials, setSharedCredentials] = useState<SharedCredential[]>([]);
-  const [isSharing, setIsSharing] = useState(false);
   const [shareProgress, setShareProgress] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; title: string; description?: string }>({
@@ -28,39 +29,53 @@ export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
   });
   const { announceToScreenReader } = useAccessibility();
   const shareButtonRef = useRef<HTMLButtonElement>(null);
+  
+  const { execute, error, clearError, isPending: isSharing } = useCredentialOperation();
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (isSharing) return;
-    setIsSharing(true);
-    setShareProgress(0);
+    clearError();
     announceToScreenReader('Generating zero-knowledge proof...');
+    setShareProgress(0);
 
-    const stages = [
-      { progress: 15, delay: 400 },
-      { progress: 35, delay: 800 },
-      { progress: 60, delay: 1200 },
-      { progress: 85, delay: 1600 },
-      { progress: 100, delay: 2000 },
-    ];
+    await execute(async () => {
+      return new Promise<void>((resolve, reject) => {
+        // Simulate network failure randomly (e.g. 10% chance) for demonstration
+        if (Math.random() < 0.1) {
+          setTimeout(() => reject(new Error('network error')), 1000);
+          return;
+        }
 
-    stages.forEach(({ progress, delay }) => {
-      setTimeout(() => setShareProgress(progress), delay);
+        const stages = [
+          { progress: 15, delay: 400 },
+          { progress: 35, delay: 800 },
+          { progress: 60, delay: 1200 },
+          { progress: 85, delay: 1600 },
+          { progress: 100, delay: 2000 },
+        ];
+
+        stages.forEach(({ progress, delay }) => {
+          setTimeout(() => setShareProgress(progress), delay);
+        });
+
+        setTimeout(() => {
+          setShowSuccess(true);
+          announceToScreenReader('Proof generated successfully');
+
+          const newShare: SharedCredential = {
+            id: crypto.randomUUID(),
+            vaccineType: 'COVID-19 Vaccination',
+            recipient: 'GABCDEF123456...',
+            expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          };
+          setSharedCredentials((prev) => [...prev, newShare]);
+          resolve();
+        }, 2400);
+      });
+    }, {
+      context: 'ShareCredential',
     });
-
-    setTimeout(() => {
-      setIsSharing(false);
-      setShowSuccess(true);
-      announceToScreenReader('Proof generated successfully');
-
-      const newShare: SharedCredential = {
-        id: crypto.randomUUID(),
-        vaccineType: 'COVID-19 Vaccination',
-        recipient: 'GABCDEF123456...',
-        expiresAt: new Date(Date.now() + 86400000).toISOString(),
-      };
-      setSharedCredentials((prev) => [...prev, newShare]);
-    }, 2400);
-  }, [isSharing, announceToScreenReader]);
+  }, [isSharing, clearError, execute, announceToScreenReader]);
 
   const handleRevoke = useCallback(
     (id: string, vaccineType: string) => {
@@ -162,6 +177,22 @@ export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
                 aria-label={`Proof generation progress: ${shareProgress}%`}
               >
                 <AnimatedProgress progress={shareProgress} label="Generating zero-knowledge proof" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Error message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-200 text-sm flex items-start gap-2"
+                role="alert"
+              >
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-400" />
+                <p>{error}</p>
               </motion.div>
             )}
           </AnimatePresence>
