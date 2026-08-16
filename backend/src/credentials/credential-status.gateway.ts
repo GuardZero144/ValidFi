@@ -11,6 +11,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { CredentialStatusEvent, StatusSubscription } from './dto/credential-status.dto';
+import { CredentialReconnectionManager } from './credential-reconnection.manager';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -25,6 +26,8 @@ export class CredentialStatusGateway
   private readonly logger = new Logger(CredentialStatusGateway.name);
   private readonly connectedClients = new Map<string, Set<string>>();
 
+  constructor(private readonly reconnectionManager: CredentialReconnectionManager) {}
+
   afterInit(server: Server) {
     this.logger.log('CredentialStatusGateway initialized');
   }
@@ -32,11 +35,28 @@ export class CredentialStatusGateway
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
     this.connectedClients.set(client.id, new Set());
-    client.emit('connected', { clientId: client.id, timestamp: new Date().toISOString() });
+
+    const storedSubs = this.reconnectionManager.getStoredSubscriptions(client.id);
+    if (storedSubs.length > 0) {
+      for (const room of storedSubs) {
+        client.join(room);
+      }
+      this.connectedClients.set(client.id, new Set(storedSubs));
+      this.logger.log(`Restored ${storedSubs.length} subscriptions for reconnecting client ${client.id}`);
+    }
+
+    this.reconnectionManager.trackConnection(client.id, storedSubs);
+    client.emit('connected', {
+      clientId: client.id,
+      timestamp: new Date().toISOString(),
+      restoredSubscriptions: storedSubs,
+    });
   }
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
+    const subscriptions = this.connectedClients.get(client.id);
+    this.reconnectionManager.markDisconnected(client.id);
     this.connectedClients.delete(client.id);
   }
 
