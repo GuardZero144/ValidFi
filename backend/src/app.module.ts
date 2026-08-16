@@ -21,6 +21,7 @@ import { BackupModule } from './backup/backup.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { CredentialsModule } from './credentials/credentials.module';
+import { HealthAuthorityModule } from './health-authority/health-authority.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { CredentialsModule } from './credentials/credentials.module';
     AnalyticsModule,
     PermissionsModule,
     CredentialsModule,
+    HealthAuthorityModule,
   ],
   providers: [
     {
