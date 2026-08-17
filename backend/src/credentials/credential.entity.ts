@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('credentials')
 export class Credential {
@@ -22,6 +22,19 @@ export class Credential {
 
   @Column({ nullable: true })
   systemSource: string;
+
+  @Index()
+  @Column({ nullable: true })
+  contentHash: string;
+
+  @Column({ nullable: true })
+  duplicateOfId: string;
+
+  @Column({ default: false })
+  isDuplicate: boolean;
+
+  @Column({ type: 'json', nullable: true })
+  duplicateMetadata: Record<string, any>;
 
   @CreateDateColumn()
   createdAt: Date;

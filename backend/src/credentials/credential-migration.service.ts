@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, QueryRunner } from 'typeorm';
 import { Credential } from './credential.entity';
+import { CredentialDeduplicationService } from './credential-deduplication.service';
 
 export interface MigrationPayload {
   sourceSystem: string;
@@ -12,6 +13,7 @@ export interface MigrationResult {
   success: boolean;
   migratedCount: number;
   failedCount: number;
+  skippedDuplicates: number;
   message: string;
   errors?: any[];
 }
@@ -20,13 +22,15 @@ export interface MigrationResult {
 export class CredentialMigrationService {
   private readonly logger = new Logger(CredentialMigrationService.name);
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly deduplicationService: CredentialDeduplicationService,
+  ) {}
 
   /**
    * Transforms raw credential data from a foreign system into our format.
    */
   private transformData(sourceSystem: string, rawData: any): Partial<Credential> {
-    // Basic transformation logic based on source system
     let type = rawData.type || 'Unknown';
     let issuer = rawData.issuer || 'Unknown';
     let data = rawData.data || rawData.attributes || {};
@@ -59,7 +63,8 @@ export class CredentialMigrationService {
 
   /**
    * Migrates a batch of credentials using a database transaction.
-   * Rolls back entirely if any credential fails transformation or validation.
+   * Includes duplicate detection: exact duplicates are skipped, similar credentials are merged.
+   * Rolls back entirely if any non-duplicate credential fails transformation or validation.
    */
   async migrateCredentials(payload: MigrationPayload): Promise<MigrationResult> {
     this.logger.log(`Starting migration from ${payload.sourceSystem} to ${payload.targetSystem}`);
@@ -69,6 +74,7 @@ export class CredentialMigrationService {
     await queryRunner.startTransaction();
 
     let migratedCount = 0;
+    let skippedDuplicates = 0;
     const errors = [];
 
     try {
@@ -77,32 +83,53 @@ export class CredentialMigrationService {
           const transformed = this.transformData(payload.sourceSystem, rawCred);
           this.validateData(transformed);
 
-          const credential = queryRunner.manager.create(Credential, transformed);
+          const dupCheck = await this.deduplicationService.preventDuplicateUpload(transformed);
+
+          if (!dupCheck.allowed) {
+            this.logger.warn(`Skipping duplicate credential during migration: existing=${dupCheck.existingId}`);
+            skippedDuplicates++;
+            continue;
+          }
+
+          const contentHash = this.deduplicationService.generateContentHash(
+            transformed.type,
+            transformed.issuer,
+            transformed.holder || null,
+            transformed.data,
+          );
+
+          const credential = queryRunner.manager.create(Credential, {
+            ...transformed,
+            contentHash,
+            isDuplicate: false,
+          });
           await queryRunner.manager.save(credential);
           migratedCount++;
         } catch (err) {
           errors.push({ rawCred, error: err.message });
-          throw err; // Throw to trigger rollback of the entire batch
+          throw err;
         }
       }
 
       await queryRunner.commitTransaction();
-      this.logger.log(`Successfully migrated ${migratedCount} credentials`);
-      
+      this.logger.log(`Migration complete: migrated=${migratedCount}, skipped=${skippedDuplicates}`);
+
       return {
         success: true,
         migratedCount,
         failedCount: 0,
-        message: 'Migration completed successfully',
+        skippedDuplicates,
+        message: `Migration completed: ${migratedCount} migrated, ${skippedDuplicates} duplicates skipped`,
       };
     } catch (err) {
       this.logger.error(`Migration failed, rolling back. Error: ${err.message}`);
       await queryRunner.rollbackTransaction();
-      
+
       return {
         success: false,
         migratedCount: 0,
         failedCount: payload.credentials.length,
+        skippedDuplicates: 0,
         message: `Migration rolled back due to error: ${err.message}`,
         errors,
       };
