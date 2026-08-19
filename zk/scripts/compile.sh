@@ -28,6 +28,17 @@ circom $CIRCUITS_DIR/utils/poseidon.circom --r1cs --wasm --sym -o $BUILD_DIR
 echo "  - Compiling merkleTree.circom..."
 circom $CIRCUITS_DIR/core/merkleTree.circom --r1cs --wasm --sym -o $BUILD_DIR
 
+# Compile Phase 2 circuits
+echo "  - Compiling vaccineDateVerification.circom..."
+circom $CIRCUITS_DIR/core/vaccineDateVerification.circom --r1cs --wasm --sym -o $BUILD_DIR -l node_modules
+
+echo "  - Compiling vaccineTypeMatch.circom..."
+circom $CIRCUITS_DIR/core/vaccineTypeMatch.circom --r1cs --wasm --sym -o $BUILD_DIR -l node_modules
+
+# Compile Phase 3 main circuit
+echo "  - Compiling vaccinationProof.circom..."
+circom $CIRCUITS_DIR/core/vaccinationProof.circom --r1cs --wasm --sym -o $BUILD_DIR -l node_modules
+
 echo "Compilation complete!"
 echo ""
 echo "Constraint counts:"

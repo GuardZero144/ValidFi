@@ -1,0 +1,19 @@
+{
+  "merkleRoot": "0",
+  "minVaccinationDate": 1640995200,
+  "maxVaccinationDate": 1704067200,
+  "currentTime": 1688169600,
+  "acceptedTypes": [1, 2, 3, 4, 5],
+  "typeCommitment": "0",
+  "requiredDoses": 2,
+  "externalNullifier": 12345,
+  "vaccinationDate": 1672531200,
+  "expiryDate": 1704067200,
+  "vaccineType": 1,
+  "doseNumber": 2,
+  "totalDoses": 2,
+  "credentialHash": "0",
+  "userSecret": 99999,
+  "merklePathElements": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  "merklePathIndices": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+}

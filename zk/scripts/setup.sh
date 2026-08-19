@@ -51,8 +51,15 @@ setup_circuit() {
 echo ""
 echo "Running trusted setup for all circuits..."
 
-# Note: Only setup main circuits, not utility templates
+# Phase 1: Foundation circuits
 setup_circuit "MerkleTreeChecker"
+
+# Phase 2: Date and vaccine type circuits
+setup_circuit "VaccineDateVerification"
+setup_circuit "VaccineTypeMatch"
+
+# Phase 3: Main vaccination proof circuit
+setup_circuit "VaccinationProof"
 
 echo ""
 echo "All setups complete!"
