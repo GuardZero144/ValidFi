@@ -1,27 +1,36 @@
 {
   "name": "validfi-zk-circuits",
-  "version": "1.0.0",
-  "description": "Zero-Knowledge circuits for ValidFi vaccination proof system",
+  "version": "2.0.0",
+  "description": "Zero-Knowledge proof generation service for ValidFi vaccination verification",
   "main": "index.js",
   "scripts": {
     "test": "mocha tests/**/*.test.js --timeout 100000",
     "test:coverage": "nyc mocha tests/**/*.test.js --timeout 100000",
+    "test:service": "mocha tests/services/*.test.js --timeout 30000",
+    "test:circuits": "mocha tests/core/*.test.js tests/utils/*.test.js --timeout 100000",
     "compile": "bash scripts/compile.sh",
     "setup": "bash scripts/setup.sh",
     "generate-proof": "bash scripts/generate-proof.sh",
     "verify-proof": "bash scripts/verify-proof.sh",
-    "benchmark": "node tests/performance/benchmark.js"
+    "benchmark": "node tests/performance/benchmark.js",
+    "proof:generate": "node src/cli.js generate",
+    "proof:verify": "node src/cli.js verify"
   },
   "keywords": [
     "zero-knowledge",
     "circom",
     "vaccination",
-    "privacy"
+    "privacy",
+    "snarkjs",
+    "groth16",
+    "stellar",
+    "soroban"
   ],
   "author": "ValidFi Team",
   "license": "MIT",
   "dependencies": {
     "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
     "snarkjs": "^0.7.3"
   },
   "devDependencies": {
