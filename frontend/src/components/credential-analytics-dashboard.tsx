@@ -131,93 +131,93 @@ export function CredentialAnalyticsDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-semibold text-white">Credential Analytics Dashboard</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <h2 className="text-xl sm:text-2xl font-semibold text-white">Credential Analytics Dashboard</h2>
         
         {/* Quick Actions */}
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors">
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg text-sm transition-colors touch-manipulation">
             <Plus className="w-4 h-4" /> Issue New
           </button>
-          <button className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors border border-white/20">
+          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-lg text-sm transition-colors border border-white/20 touch-manipulation">
             <Download className="w-4 h-4" /> Export Report
           </button>
         </div>
       </div>
 
       {/* Status & Performance Overview */}
-      <div className="flex items-center gap-6 bg-white/5 rounded-lg p-3 border border-white/10 overflow-x-auto">
-        <div className="flex items-center gap-2 px-3 py-1 border-r border-white/10 shrink-0">
+      <div className="flex items-center gap-4 sm:gap-6 bg-white/5 rounded-lg p-3 border border-white/10 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-2 px-2 sm:px-3 py-1 border-r border-white/10 shrink-0">
           <div className={`w-3 h-3 rounded-full ${data.systemStatus.status === 'operational' ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
-          <span className="text-sm text-green-200">System: <span className="text-white capitalize">{data.systemStatus.status}</span></span>
+          <span className="text-xs sm:text-sm text-green-200">System: <span className="text-white capitalize">{data.systemStatus.status}</span></span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 border-r border-white/10 shrink-0">
+        <div className="flex items-center gap-2 px-2 sm:px-3 py-1 border-r border-white/10 shrink-0">
           <Server className="w-4 h-4 text-blue-400" />
-          <span className="text-sm text-green-200">Uptime: <span className="text-white">{data.systemStatus.uptime}</span></span>
+          <span className="text-xs sm:text-sm text-green-200">Uptime: <span className="text-white">{data.systemStatus.uptime}</span></span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 shrink-0">
+        <div className="flex items-center gap-2 px-2 sm:px-3 py-1 shrink-0">
           <Activity className="w-4 h-4 text-purple-400" />
-          <span className="text-sm text-green-200">API Latency: <span className="text-white">{data.systemStatus.apiLatency}</span></span>
+          <span className="text-xs sm:text-sm text-green-200">API Latency: <span className="text-white">{data.systemStatus.apiLatency}</span></span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <h3 className="text-green-200 text-sm font-medium">Total Credentials Issued</h3>
-          <p className="text-3xl text-white font-bold mt-2">{data.usage.totalIdentities}</p>
-          <div className="mt-2 text-xs text-green-300">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
+          <h3 className="text-green-200 text-xs sm:text-sm font-medium">Total Credentials Issued</h3>
+          <p className="text-2xl sm:text-3xl text-white font-bold mt-1 sm:mt-2">{data.usage.totalIdentities}</p>
+          <div className="mt-1 sm:mt-2 text-xs text-green-300">
             {data.usage.activeIdentities} active • {data.usage.revokedIdentities} revoked
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <h3 className="text-blue-200 text-sm font-medium">Total Verifications</h3>
-          <p className="text-3xl text-white font-bold mt-2">{data.verificationRates.total}</p>
-          <div className="mt-2 text-xs text-blue-300">
+        <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
+          <h3 className="text-blue-200 text-xs sm:text-sm font-medium">Total Verifications</h3>
+          <p className="text-2xl sm:text-3xl text-white font-bold mt-1 sm:mt-2">{data.verificationRates.total}</p>
+          <div className="mt-1 sm:mt-2 text-xs text-blue-300">
             {data.verificationRates.approved} approved • {data.verificationRates.rejected} rejected
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <h3 className="text-purple-200 text-sm font-medium">Data Shares</h3>
-          <p className="text-3xl text-white font-bold mt-2">{data.sharingPatterns.total}</p>
-          <div className="mt-2 text-xs text-purple-300">
+        <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10 sm:col-span-2 md:col-span-1">
+          <h3 className="text-purple-200 text-xs sm:text-sm font-medium">Data Shares</h3>
+          <p className="text-2xl sm:text-3xl text-white font-bold mt-1 sm:mt-2">{data.sharingPatterns.total}</p>
+          <div className="mt-1 sm:mt-2 text-xs text-purple-300">
             {data.sharingPatterns.active} active • {data.sharingPatterns.expired} expired
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10 lg:col-span-2">
-          <h3 className="text-white text-lg font-medium mb-4">Verification Trend (Last 7 Days)</h3>
-          <div className="h-64">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6">
+        <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10 lg:col-span-2">
+          <h3 className="text-white text-base sm:text-lg font-medium mb-3 sm:mb-4">Verification Trend (Last 7 Days)</h3>
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data.verificationTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
-                <XAxis dataKey="date" stroke="#ffffff80" />
-                <YAxis stroke="#ffffff80" />
+                <XAxis dataKey="date" stroke="#ffffff80" tick={{ fontSize: 12 }} />
+                <YAxis stroke="#ffffff80" tick={{ fontSize: 12 }} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '0.5rem', color: '#fff' }}
+                  contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '0.5rem', color: '#fff', fontSize: '12px' }}
                   itemStyle={{ color: '#fff' }}
                 />
-                <Line type="monotone" dataKey="count" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="count" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <h3 className="text-white text-lg font-medium mb-4">Verification Rates</h3>
-          <div className="h-64">
+        <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10">
+          <h3 className="text-white text-base sm:text-lg font-medium mb-3 sm:mb-4">Verification Rates</h3>
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
+                  innerRadius={45}
+                  outerRadius={65}
                   fill="#8884d8"
                   paddingAngle={5}
                   dataKey="value"
@@ -227,9 +227,9 @@ export function CredentialAnalyticsDashboard() {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '0.5rem', color: '#fff' }}
+                  contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '0.5rem', color: '#fff', fontSize: '12px' }}
                 />
-                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ color: '#ffffff80' }} />
+                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ color: '#ffffff80', fontSize: '12px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -237,25 +237,25 @@ export function CredentialAnalyticsDashboard() {
       </div>
 
       {/* Recent Activity Feed */}
-      <div className="bg-white/5 rounded-lg p-4 border border-white/10 mt-6">
-        <h3 className="text-white text-lg font-medium mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-green-400" /> Recent Activity
+      <div className="bg-white/5 rounded-lg p-3 sm:p-4 border border-white/10 mt-4 sm:mt-6">
+        <h3 className="text-white text-base sm:text-lg font-medium mb-3 sm:mb-4 flex items-center gap-2">
+          <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" /> Recent Activity
         </h3>
-        <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+        <div className="space-y-2 sm:space-y-3 max-h-60 sm:max-h-80 overflow-y-auto pr-1 sm:pr-2">
           {data.recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-start gap-4 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-              <div className={`mt-1 p-2 rounded-full ${getStatusColor(activity.status)}`}>
+            <div key={activity.id} className="flex items-start gap-3 sm:gap-4 p-2.5 sm:p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors touch-manipulation">
+              <div className={`mt-1 p-1.5 sm:p-2 rounded-full ${getStatusColor(activity.status)} flex-shrink-0`}>
                 {getActivityIcon(activity.type)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{activity.description}</p>
+                <p className="text-xs sm:text-sm font-medium text-white truncate">{activity.description}</p>
                 <p className="text-xs text-green-200 mt-1">
                   {new Date(activity.timestamp).toLocaleString(undefined, { 
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
                   })}
                 </p>
               </div>
-              <div>
+              <div className="flex-shrink-0">
                 <span className={`text-xs px-2 py-1 rounded-full border border-white/10 capitalize ${getStatusColor(activity.status)}`}>
                   {activity.status}
                 </span>
