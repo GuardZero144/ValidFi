@@ -3,7 +3,10 @@
 use crate::vaccination_verification::{
     VaccinationStatus, VaccinationVerification, VaccinationVerificationClient,
 };
-use soroban_sdk::{testutils::{Address as _, Events, Ledger}, Address, Bytes, BytesN, Env, String};
+use soroban_sdk::{
+    testutils::{Address as _, Events, Ledger},
+    Address, Bytes, BytesN, Env, String,
+};
 
 fn setup_env<'a>() -> (Env, VaccinationVerificationClient<'a>, Address) {
     let env = Env::default();

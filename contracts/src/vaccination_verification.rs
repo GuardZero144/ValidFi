@@ -104,7 +104,11 @@ impl VaccinationVerification {
 
         env.events().publish(
             (String::from_str(env, "vax_submit"), credential_id),
-            VaccinationEvent::CredentialSubmitted(credential_id, patient_id, env.ledger().timestamp()),
+            VaccinationEvent::CredentialSubmitted(
+                credential_id,
+                patient_id,
+                env.ledger().timestamp(),
+            ),
         );
 
         Ok(credential_id)
@@ -125,7 +129,8 @@ impl VaccinationVerification {
             return Err(Error::CredentialRevoked);
         }
 
-        let proof_valid = Self::validate_zk_proof(env, &credential.zk_proof, &credential.proof_hash);
+        let proof_valid =
+            Self::validate_zk_proof(env, &credential.zk_proof, &credential.proof_hash);
 
         if !proof_valid {
             credential.status = VaccinationStatus::Invalid;
