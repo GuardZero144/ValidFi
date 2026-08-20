@@ -20,6 +20,7 @@ import { AuditModule } from './audit/audit.module';
 import { BackupModule } from './backup/backup.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { PermissionsModule } from './permissions/permissions.module';
+import { CredentialVersioningModule } from './credential-versioning/credential-versioning.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { PermissionsModule } from './permissions/permissions.module';
     BackupModule,
     AnalyticsModule,
     PermissionsModule,
+    CredentialVersioningModule,
   ],
   providers: [
     {

@@ -25,7 +25,6 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/config": "^3.0.0",
     "@nestjs/typeorm": "^10.0.0",
-    "@nestjs/redis": "^1.0.0",
     "typeorm": "^0.3.17",
     "pg": "^8.11.0",
     "redis": "^4.6.0",
