@@ -1,7 +1,7 @@
 extern crate std;
 
 use soroban_sdk::{
-    testutils::{Address as _, Ledger},
+    testutils::{Address as _, Events, Ledger},
     Address, Bytes, BytesN, Env, String,
 };
 
@@ -182,6 +182,42 @@ fn test_submit_and_reject_verification() {
     verification.reject_verification(&v_id, &reason);
     let rejected = verification.get_verification(&v_id);
     assert_eq!(rejected.status, String::from_str(&env, "rejected"));
+}
+
+#[test]
+fn test_approve_verification_emits_event() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmEvt1"));
+    let proof_hash = BytesN::from_array(&env, &[42u8; 32]);
+    let commitment = BytesN::from_array(&env, &[99u8; 32]);
+    let v_id = verification.submit_proof(&identity_id, &verifier, &proof_hash, &commitment);
+
+    let events_before = env.events().all().len();
+    verification.approve_verification(&v_id);
+    assert_eq!(env.events().all().len(), events_before + 1);
+}
+
+#[test]
+fn test_reject_verification_emits_event() {
+    let (env, identity, verification, _, _, _) = setup();
+    let user = Address::generate(&env);
+    let verifier = Address::generate(&env);
+    let doc_hash = BytesN::from_array(&env, &[1u8; 32]);
+
+    let identity_id =
+        identity.register_identity(&user, &doc_hash, &String::from_str(&env, "QmEvt2"));
+    let proof_hash = BytesN::from_array(&env, &[42u8; 32]);
+    let commitment = BytesN::from_array(&env, &[99u8; 32]);
+    let v_id = verification.submit_proof(&identity_id, &verifier, &proof_hash, &commitment);
+
+    let events_before = env.events().all().len();
+    verification.reject_verification(&v_id, &String::from_str(&env, "insufficient_proof"));
+    assert_eq!(env.events().all().len(), events_before + 1);
 }
 
 #[test]
@@ -491,6 +527,67 @@ fn test_get_permission() {
     assert_eq!(perm.grantee, grantee);
     assert_eq!(perm.resource_id, 42);
     assert!(perm.is_active);
+}
+
+#[test]
+fn test_grant_records_history_entry() {
+    use crate::access_control::AccessAction;
+
+    let (env, _, _, access, _, _) = setup();
+    let grantor = Address::generate(&env);
+    let grantee = Address::generate(&env);
+
+    let pid = access.grant_access(&grantor, &grantee, &7, &3600);
+    let history = access.get_access_history(&pid);
+
+    assert_eq!(history.len(), 1);
+    let entry = history.get(0).unwrap();
+    assert_eq!(entry.permission_id, pid);
+    assert_eq!(entry.grantee, grantee);
+    assert_eq!(entry.resource_id, 7);
+    assert_eq!(entry.actor, grantor);
+    assert_eq!(entry.action, AccessAction::Granted);
+}
+
+#[test]
+fn test_revoke_and_extend_append_to_history_in_order() {
+    use crate::access_control::AccessAction;
+
+    let (env, _, _, access, _, _) = setup();
+    let grantor = Address::generate(&env);
+    let grantee = Address::generate(&env);
+
+    let pid = access.grant_access(&grantor, &grantee, &1, &1000);
+    access.extend_access(&pid, &500);
+    access.revoke_access(&pid);
+
+    let history = access.get_access_history(&pid);
+    assert_eq!(history.len(), 3);
+    assert_eq!(history.get(0).unwrap().action, AccessAction::Granted);
+    assert_eq!(history.get(1).unwrap().action, AccessAction::Extended);
+    assert_eq!(history.get(2).unwrap().action, AccessAction::Revoked);
+}
+
+#[test]
+fn test_access_history_empty_for_unknown_permission() {
+    let (_, _, _, access, _, _) = setup();
+    let history = access.get_access_history(&999);
+    assert_eq!(history.len(), 0);
+}
+
+#[test]
+fn test_access_history_is_per_permission() {
+    let (env, _, _, access, _, _) = setup();
+    let grantor = Address::generate(&env);
+    let grantee_a = Address::generate(&env);
+    let grantee_b = Address::generate(&env);
+
+    let pid_a = access.grant_access(&grantor, &grantee_a, &1, &1000);
+    let pid_b = access.grant_access(&grantor, &grantee_b, &2, &1000);
+    access.revoke_access(&pid_a);
+
+    assert_eq!(access.get_access_history(&pid_a).len(), 2);
+    assert_eq!(access.get_access_history(&pid_b).len(), 1);
 }
 
 // ── Data Sharing Integration ─────────────────────────────────────────────────

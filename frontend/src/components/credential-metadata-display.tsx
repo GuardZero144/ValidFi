@@ -285,23 +285,23 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
   return (
     <div role="region" aria-labelledby="metadata-heading">
-      <div className="flex items-center justify-between mb-6">
-        <h2 id="metadata-heading" className="text-2xl font-bold text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <h2 id="metadata-heading" className="text-xl sm:text-2xl font-bold text-white">
           Credential Metadata
         </h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {lastRefresh && (
-            <span className="text-green-300 text-sm">
+            <span className="text-green-300 text-xs sm:text-sm hidden sm:block">
               Last updated: {formatDateTime(lastRefresh.toISOString())}
             </span>
           )}
           <motion.button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            className={`flex items-center gap-2 px-3 py-2 sm:py-1.5 rounded-lg text-sm transition-colors touch-manipulation ${
               isRefreshing
                 ? 'bg-green-600/50 text-white/70 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-green-600 hover:bg-green-700 active:bg-green-800 text-white'
             }`}
             animate={isRefreshing ? { rotate: 360 } : {}}
             transition={isRefreshing ? { duration: 1, repeat: Infinity, ease: 'linear' } : {}}
@@ -328,27 +328,27 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
       {/* Summary Section */}
       {credentials.length > 0 && (
-        <div className="bg-white/5 rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white/5 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">{credentials.length}</div>
-              <div className="text-green-200 text-sm">Total Credentials</div>
+              <div className="text-xl sm:text-2xl font-bold text-white">{credentials.length}</div>
+              <div className="text-green-200 text-xs sm:text-sm">Total Credentials</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-400">{activeCount}</div>
-              <div className="text-green-200 text-sm">Active</div>
+              <div className="text-xl sm:text-2xl font-bold text-green-400">{activeCount}</div>
+              <div className="text-green-200 text-xs sm:text-sm">Active</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-400">{uniqueIssuers}</div>
-              <div className="text-green-200 text-sm">Unique Issuers</div>
+              <div className="text-xl sm:text-2xl font-bold text-blue-400">{uniqueIssuers}</div>
+              <div className="text-green-200 text-xs sm:text-sm">Unique Issuers</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-400">{uniqueTypes}</div>
-              <div className="text-green-200 text-sm">Credential Types</div>
+              <div className="text-xl sm:text-2xl font-bold text-purple-400">{uniqueTypes}</div>
+              <div className="text-green-200 text-xs sm:text-sm">Credential Types</div>
             </div>
           </div>
           {(expiredCount > 0 || revokedCount > 0) && (
-            <div className="mt-4 pt-4 border-t border-green-400/20 flex items-center gap-4 text-sm">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-green-400/20 flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
               {expiredCount > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
@@ -368,8 +368,8 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
       {/* Search and Filter */}
       {credentials.length > 0 && (
-        <div className="bg-white/5 rounded-lg p-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-white/5 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-400" aria-hidden="true" />
               <input
@@ -377,13 +377,13 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                 placeholder="Search by name, issuer, type, or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/10 border border-green-400/30 rounded-lg pl-10 pr-4 py-2 text-white placeholder-green-300 focus:outline-none focus:border-green-400"
+                className="w-full bg-white/10 border border-green-400/30 rounded-lg pl-10 pr-10 py-3 sm:py-2 text-white placeholder-green-300 focus:outline-none focus:border-green-400 text-base sm:text-sm"
                 aria-label="Search credentials"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-400 hover:text-green-300"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-400 hover:text-green-300 p-1 touch-manipulation"
                   aria-label="Clear search"
                 >
                   ×
@@ -391,11 +391,11 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-green-400" aria-hidden="true" />
+              <Filter className="w-4 h-4 text-green-400 hidden sm:block" aria-hidden="true" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'expired' | 'revoked')}
-                className="bg-white/10 border border-green-400/30 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                className="w-full sm:w-auto bg-white/10 border border-green-400/30 rounded-lg px-3 py-3 sm:py-2 text-white focus:outline-none focus:border-green-400 text-base sm:text-sm"
                 aria-label="Filter by status"
               >
                 <option value="all">All Status</option>
@@ -406,7 +406,7 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
             </div>
           </div>
           {(searchQuery || statusFilter !== 'all') && (
-            <div className="mt-3 text-sm text-green-200">
+            <div className="mt-2 sm:mt-3 text-xs sm:text-sm text-green-200">
               Showing {filteredCredentials.length} of {credentials.length} credentials
               {searchQuery && ` matching "${searchQuery}"`}
               {statusFilter !== 'all' && ` with status "${statusFilter}"`}
@@ -417,28 +417,28 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
       {/* Bulk Actions */}
       {filteredCredentials.length > 0 && (
-        <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-4 px-2">
           <div className="flex items-center gap-3">
             {!compareMode && (
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer touch-manipulation">
                 <input
                   type="checkbox"
                   checked={selectedIds.size === filteredCredentials.length && filteredCredentials.length > 0}
                   onChange={handleSelectAll}
-                  className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-500 bg-white/10"
+                  className="w-5 h-5 sm:w-4 sm:h-4 rounded border-green-400 text-green-600 focus:ring-green-500 bg-white/10"
                   aria-label="Select all credentials"
                 />
-                <span className="text-green-200 text-sm">
+                <span className="text-green-200 text-xs sm:text-sm">
                   {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
                 </span>
               </label>
             )}
             <button
               onClick={handleToggleCompareMode}
-              className={`px-3 py-1 rounded text-sm transition-colors ${
+              className={`px-3 py-2 sm:py-1 rounded text-sm transition-colors touch-manipulation ${
                 compareMode
                   ? 'bg-green-600 text-white'
-                  : 'bg-white/10 text-green-200 hover:bg-white/20'
+                  : 'bg-white/10 text-green-200 hover:bg-white/20 active:bg-white/30'
               }`}
               aria-label={compareMode ? 'Exit compare mode' : 'Enter compare mode'}
             >
@@ -446,11 +446,11 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
             </button>
           </div>
           {selectedIds.size > 0 && !compareMode && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors touch-manipulation"
                 onClick={() => handleBulkExport('json')}
                 aria-label={`Export ${selectedIds.size} selected credentials as JSON`}
               >
@@ -460,7 +460,7 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors touch-manipulation"
                 onClick={() => handleBulkExport('csv')}
                 aria-label={`Export ${selectedIds.size} selected credentials as CSV`}
               >
@@ -469,7 +469,7 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors touch-manipulation"
                 onClick={() => handleBulkExport('xml')}
                 aria-label={`Export ${selectedIds.size} selected credentials as XML`}
               >
@@ -487,14 +487,14 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-white/5 rounded-lg p-4 mb-6 overflow-hidden"
+            className="bg-white/5 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 overflow-hidden"
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Credential Comparison</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Credential Comparison</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {compareCredentials.credentials.map((cred, index) => (
                 <div key={cred.id} className="bg-white/10 rounded-lg p-3">
-                  <p className="text-white font-medium mb-2">{cred.name}</p>
-                  <div className="space-y-1 text-sm">
+                  <p className="text-white font-medium mb-2 text-sm sm:text-base">{cred.name}</p>
+                  <div className="space-y-1 text-xs sm:text-sm">
                     <p className={compareCredentials.differences.includes('type') ? 'text-yellow-400' : 'text-green-200'}>
                       Type: {cred.type}
                     </p>
@@ -509,8 +509,8 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
               ))}
             </div>
             {compareCredentials.differences.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-green-400/20">
-                <p className="text-yellow-400 text-sm">
+              <div className="mt-3 sm:mt-4 pt-3 border-t border-green-400/20">
+                <p className="text-yellow-400 text-xs sm:text-sm">
                   Differences found in: {compareCredentials.differences.join(', ')}
                 </p>
               </div>
@@ -524,25 +524,25 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 mb-4 text-blue-200 text-sm"
+          className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 mb-3 sm:mb-4 text-blue-200 text-xs sm:text-sm"
         >
           Select 2 credentials to compare their metadata side by side.
         </motion.div>
       )}
 
-      <div className="space-y-4" role="list" aria-label="Credential metadata list">
+      <div className="space-y-3 sm:space-y-4" role="list" aria-label="Credential metadata list">
         <AnimatePresence mode="popLayout">
           {filteredCredentials.length === 0 ? (
             <motion.div
               key="empty"
-              className="text-center py-8 text-green-200"
+              className="text-center py-6 sm:py-8 text-green-200"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               role="status"
             >
-              <Info className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
-              <p>No credentials to display</p>
+              <Info className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 opacity-50" aria-hidden="true" />
+              <p className="text-sm sm:text-base">No credentials to display</p>
             </motion.div>
           ) : (
             filteredCredentials.map((credential, index) => (
@@ -559,7 +559,7 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
               >
                 {/* Header */}
                 <div
-                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+                  className="p-3 sm:p-4 flex items-start sm:items-center justify-between cursor-pointer hover:bg-white/5 transition-colors touch-manipulation"
                   onClick={() => handleToggleExpand(credential.id)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -572,19 +572,19 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                   aria-expanded={expandedId === credential.id}
                   aria-controls={`metadata-details-${credential.id}`}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(credential.id)}
                       onChange={() => handleSelectCredential(credential.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-500 bg-white/10"
+                      className="w-5 h-5 sm:w-4 sm:h-4 rounded border-green-400 text-green-600 focus:ring-green-500 bg-white/10 mt-1 sm:mt-0 flex-shrink-0"
                       aria-label={`Select ${credential.name}`}
                     />
-                    <Info className="w-6 h-6 text-green-400" aria-hidden="true" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <p className="text-white font-medium">{credential.name}</p>
+                    <Info className="w-5 h-5 sm:w-6 sm:h-6 text-green-400 flex-shrink-0 mt-1 sm:mt-0" aria-hidden="true" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <p className="text-white font-medium text-sm sm:text-base truncate">{credential.name}</p>
                         <span className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(credential.status)}`}>
                           {credential.status.charAt(0).toUpperCase() + credential.status.slice(1)}
                         </span>
@@ -601,7 +601,7 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                           );
                         })()}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-green-200">
+                      <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 mt-1 text-xs sm:text-sm text-green-200">
                         <span className="flex items-center gap-1">
                           <Tag className="w-3 h-3" aria-hidden="true" />
                           {credential.type}
@@ -610,20 +610,20 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                           <Building2 className="w-3 h-3" aria-hidden="true" />
                           {credential.issuerName}
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 hidden sm:flex">
                           <Calendar className="w-3 h-3" aria-hidden="true" />
                           {getRelativeTime(credential.issuedAt)}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                     <motion.button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCopyToClipboard(credential);
                       }}
-                      className="p-1.5 rounded hover:bg-white/10 transition-colors"
+                      className="p-2 -m-2 rounded hover:bg-white/10 transition-colors touch-manipulation"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       aria-label={`Copy ${credential.name} metadata to clipboard`}
@@ -651,13 +651,13 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                       transition={{ duration: 0.2 }}
                       className="border-t border-green-400/20"
                     >
-                      <div className="p-4 space-y-3">
+                      <div className="p-3 sm:p-4 space-y-3">
                         {/* Issuer Info */}
                         <div className="flex items-start gap-3">
-                          <Building2 className="w-5 h-5 text-green-400 mt-0.5" aria-hidden="true" />
-                          <div>
-                            <p className="text-green-200 text-sm">Issuer</p>
-                            <p className="text-white">{credential.issuerName}</p>
+                          <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                          <div className="min-w-0">
+                            <p className="text-green-200 text-xs sm:text-sm">Issuer</p>
+                            <p className="text-white text-sm sm:text-base">{credential.issuerName}</p>
                             <p className="text-green-300 text-xs font-mono mt-1 break-all">
                               {credential.issuer}
                             </p>
@@ -666,37 +666,37 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
                         {/* Credential Type */}
                         <div className="flex items-start gap-3">
-                          <Tag className="w-5 h-5 text-green-400 mt-0.5" aria-hidden="true" />
+                          <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
                           <div>
-                            <p className="text-green-200 text-sm">Type</p>
-                            <p className="text-white">{credential.type}</p>
+                            <p className="text-green-200 text-xs sm:text-sm">Type</p>
+                            <p className="text-white text-sm sm:text-base">{credential.type}</p>
                           </div>
                         </div>
 
                         {/* Dates */}
                         <div className="flex items-start gap-3">
-                          <Calendar className="w-5 h-5 text-green-400 mt-0.5" aria-hidden="true" />
+                          <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
                           <div>
-                            <p className="text-green-200 text-sm">Issued Date</p>
-                            <p className="text-white">{formatDate(credential.issuedAt)}</p>
+                            <p className="text-green-200 text-xs sm:text-sm">Issued Date</p>
+                            <p className="text-white text-sm sm:text-base">{formatDate(credential.issuedAt)}</p>
                           </div>
                         </div>
 
                         <div className="flex items-start gap-3">
-                          <Clock className="w-5 h-5 text-green-400 mt-0.5" aria-hidden="true" />
+                          <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
                           <div>
-                            <p className="text-green-200 text-sm">Last Updated</p>
-                            <p className="text-white">{formatDateTime(credential.updatedAt)}</p>
+                            <p className="text-green-200 text-xs sm:text-sm">Last Updated</p>
+                            <p className="text-white text-sm sm:text-base">{formatDateTime(credential.updatedAt)}</p>
                           </div>
                         </div>
 
                         {/* Expiry if present */}
                         {credential.expiresAt && (
                           <div className="flex items-start gap-3">
-                            <Calendar className="w-5 h-5 text-yellow-400 mt-0.5" aria-hidden="true" />
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
                             <div>
-                              <p className="text-green-200 text-sm">Expires</p>
-                              <p className="text-white">{formatDate(credential.expiresAt)}</p>
+                              <p className="text-green-200 text-xs sm:text-sm">Expires</p>
+                              <p className="text-white text-sm sm:text-base">{formatDate(credential.expiresAt)}</p>
                             </div>
                           </div>
                         )}
@@ -704,16 +704,16 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                         {/* Description if present */}
                         {credential.description && (
                           <div className="mt-3 pt-3 border-t border-green-400/20">
-                            <p className="text-green-200 text-sm mb-1">Description</p>
-                            <p className="text-green-100 text-sm">{credential.description}</p>
+                            <p className="text-green-200 text-xs sm:text-sm mb-1">Description</p>
+                            <p className="text-green-100 text-xs sm:text-sm">{credential.description}</p>
                           </div>
                         )}
 
                         {/* Technical Details */}
                         {(credential.version || credential.schema || credential.proofType) && (
                           <div className="mt-3 pt-3 border-t border-green-400/20">
-                            <p className="text-green-200 text-sm mb-2">Technical Details</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                            <p className="text-green-200 text-xs sm:text-sm mb-2">Technical Details</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
                               {credential.version && (
                                 <div>
                                   <span className="text-green-300">Version:</span>
@@ -744,13 +744,13 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
 
                         {/* Validation Status */}
                         <div className="mt-3 pt-3 border-t border-green-400/20">
-                          <p className="text-green-200 text-sm mb-2">Validation Status</p>
+                          <p className="text-green-200 text-xs sm:text-sm mb-2">Validation Status</p>
                           <div className="flex items-center gap-2">
                             <span className={`w-2 h-2 rounded-full ${
                               credential.status === 'active' ? 'bg-green-500' : 
                               credential.status === 'expired' ? 'bg-yellow-500' : 'bg-red-500'
                             }`}></span>
-                            <span className="text-white text-sm">
+                            <span className="text-white text-xs sm:text-sm">
                               {credential.status === 'active' ? 'Valid and verified' :
                                credential.status === 'expired' ? 'Expired - requires renewal' :
                                'Revoked - contact issuer'}
@@ -761,8 +761,8 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
                         {/* Metadata History */}
                         {credential.history && credential.history.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-green-400/20">
-                            <p className="text-green-200 text-sm mb-2">Change History</p>
-                            <div className="space-y-2 max-h-32 overflow-y-auto">
+                            <p className="text-green-200 text-xs sm:text-sm mb-2">Change History</p>
+                            <div className="space-y-2 max-h-40 sm:max-h-32 overflow-y-auto">
                               {credential.history.map((item, idx) => (
                                 <div key={idx} className="text-xs bg-white/5 rounded p-2">
                                   <div className="flex items-center justify-between">
@@ -799,16 +799,16 @@ export function CredentialMetadataDisplay({ credentials }: CredentialMetadataDis
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50"
+            className="fixed bottom-4 right-4 left-4 sm:left-auto bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50"
             role="alert"
             aria-live="polite"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <div>
-              <p className="font-medium">{toast.title}</p>
-              {toast.description && <p className="text-sm text-green-100">{toast.description}</p>}
+            <div className="min-w-0">
+              <p className="font-medium text-sm sm:text-base">{toast.title}</p>
+              {toast.description && <p className="text-xs sm:text-sm text-green-100">{toast.description}</p>}
             </div>
           </motion.div>
         )}

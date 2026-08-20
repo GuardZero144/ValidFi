@@ -77,11 +77,39 @@ export class AiService {
     }
   }
 
+  async detectFraud(credentialData: any): Promise<{ fraudScore: number; isFlagged: boolean; suspiciousPatterns: string[] }> {
+    try {
+      const prompt = `Analyze this health credential data for potential fraud: ${JSON.stringify(credentialData)}. Check for date inconsistencies (e.g. boosters before primary shots), known fraudulent lot numbers, missing issuer signatures, or any suspicious patterns. Return a JSON object with 'fraudScore' (0-100, where 100 is highly fraudulent), 'isFlagged' (boolean, true if score > 70), and 'suspiciousPatterns' (array of strings explaining the issues).`;
+      
+      const completion = await this.groq.chat.completions.create({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert fraud detection AI specialized in health credentials. Always return valid JSON only.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        model: 'llama-4-70b',
+        temperature: 0.2,
+        max_tokens: 512,
+      });
+
+      const response = completion.choices[0]?.message?.content || '{}';
+      return JSON.parse(response);
+    } catch (error) {
+      throw new Error(`Fraud detection failed: ${error.message}`);
+    }
+  }
+
   private buildAnalysisPrompt(documentText: string, documentType: string): string {
     const prompts: Record<string, string> = {
       passport: `Analyze this passport document for authenticity. Check for: valid passport number format, expiration date, issuing authority, missing fields, and any signs of tampering. Document text: ${documentText}`,
       'driver-license': `Analyze this driver's license for authenticity. Check for: valid license number format, expiration date, issuing authority, and any signs of tampering. Document text: ${documentText}`,
       'utility-bill': `Analyze this utility bill for authenticity. Check for: address consistency, date validity, issuing utility company, and any signs of tampering. Document text: ${documentText}`,
+      'health-credential': `Analyze this health credential for authenticity. Check for: date inconsistencies, invalid issuer formats, known fraudulent lot numbers, and any signs of tampering. Document text: ${documentText}`,
     };
 
     return prompts[documentType] || `Analyze this document for authenticity and completeness. Document text: ${documentText}`;

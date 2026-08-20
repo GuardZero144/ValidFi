@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
-import { Upload, Shield, FileText, Trash2, Syringe } from 'lucide-react';
+import { useState, useCallback, useRef, useMemo } from 'react';
+import { Upload, Shield, Trash2, Syringe, Eye, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedProgress, SuccessOverlay, SuccessToast } from './animations';
 import { DeletionConfirmationModal } from './deletion-confirmation-modal';
+import { CredentialDetailsModal } from './credential-details-modal';
+import { CredentialEditModal } from './credential-edit-modal';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 
 interface HealthCredentialVaultProps {
@@ -28,6 +30,11 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
   });
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
   const [credentialToDelete, setCredentialToDelete] = useState<Credential | null>(null);
+  
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
+  
   const [deletionStatus, setDeletionStatus] = useState<'idle' | 'deleting' | 'deleted' | 'failed' | 'undoable'>('idle');
   const { announceToScreenReader } = useAccessibility();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,22 +135,34 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
     []
   );
 
+  const credentialActions = useMemo(() => [
+    { icon: Eye, label: 'View details', color: 'text-blue-400 hover:text-blue-300', handler: (credential: Credential) => () => {
+      setSelectedCredential(credential);
+      setIsDetailsModalOpen(true);
+    }},
+    { icon: Edit2, label: 'Edit', color: 'text-yellow-400 hover:text-yellow-300', handler: (credential: Credential) => () => {
+      setSelectedCredential(credential);
+      setIsEditModalOpen(true);
+    }},
+    { icon: Trash2, label: 'Delete', color: 'text-red-400 hover:text-red-300', handler: (credential: Credential) => () => handleDelete(credential)},
+  ], [handleDelete]);
+
   return (
     <div role="region" aria-labelledby="vault-heading">
-      <h2 id="vault-heading" className="text-2xl font-bold text-white mb-6">
+      <h2 id="vault-heading" className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">
         Health Credential Vault
       </h2>
 
       {/* Upload zone */}
       <motion.div
-        className="border-2 border-dashed border-green-400 rounded-lg p-8 mb-6 text-center hover:border-green-300 transition-colors relative overflow-hidden"
+        className="border-2 border-dashed border-green-400 rounded-lg p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 text-center hover:border-green-300 transition-colors relative overflow-hidden"
         whileHover={{ scale: 1.005 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         role="region"
         aria-label="File upload area"
       >
-        <Upload className="w-12 h-12 text-green-400 mx-auto mb-4" aria-hidden="true" />
-        <p className="text-white mb-4">Upload your vaccination records</p>
+        <Upload className="w-10 h-10 sm:w-12 sm:h-12 text-green-400 mx-auto mb-3 sm:mb-4" aria-hidden="true" />
+        <p className="text-white mb-3 sm:mb-4 text-sm sm:text-base">Upload your vaccination records</p>
         <input
           ref={fileInputRef}
           type="file"
@@ -157,10 +176,10 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
         <label
           htmlFor="file-upload"
           onKeyDown={(e) => handleKeyDown(e, () => fileInputRef.current?.click())}
-          className={`inline-block px-6 py-2 rounded-lg cursor-pointer transition-colors ${
+          className={`inline-block px-4 sm:px-6 py-3 sm:py-2 rounded-lg cursor-pointer transition-colors touch-manipulation ${
             uploadProgress !== null
               ? 'bg-green-600/50 cursor-not-allowed'
-              : 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-green-600 hover:bg-green-700 text-white active:bg-green-800'
           }`}
           tabIndex={0}
           role="button"
@@ -172,7 +191,7 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
         <AnimatePresence>
           {uploadProgress !== null && (
             <motion.div
-              className="mt-6"
+              className="mt-4 sm:mt-6"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -189,25 +208,25 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
       </motion.div>
 
       {/* Credentials list */}
-      <div className="space-y-4" role="list" aria-label="Uploaded credentials">
+      <div className="space-y-3 sm:space-y-4" role="list" aria-label="Uploaded credentials">
         <AnimatePresence mode="popLayout">
           {credentials.length === 0 ? (
             <motion.div
               key="empty"
-              className="text-center py-8 text-green-200"
+              className="text-center py-6 sm:py-8 text-green-200"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               role="status"
             >
-              <Syringe className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
-              <p>No health credentials uploaded yet</p>
+              <Syringe className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 opacity-50" aria-hidden="true" />
+              <p className="text-sm sm:text-base">No health credentials uploaded yet</p>
             </motion.div>
           ) : (
             credentials.map((credential, index) => (
               <motion.div
                 key={credential.id}
-                className="bg-white/10 rounded-lg p-4 flex items-center justify-between"
+                className="bg-white/10 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20, scale: 0.95 }}
@@ -216,30 +235,33 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
                 role="listitem"
                 aria-label={`${credential.vaccineType} credential, status: ${credential.verificationStatus ? 'Verified' : 'Pending'}`}
               >
-                <div className="flex items-center gap-4">
-                  <Shield className="w-8 h-8 text-green-400" aria-hidden="true" />
-                  <div>
-                    <p className="text-white font-medium">{credential.vaccineType}</p>
-                    <p className="text-green-200 text-sm">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 flex-shrink-0" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p className="text-white font-medium text-sm sm:text-base truncate">{credential.vaccineType}</p>
+                    <p className="text-green-200 text-xs sm:text-sm">
                       Status: {credential.verificationStatus ? 'Verified' : 'Pending'}
                     </p>
-                    <p className="text-green-200 text-sm">
+                    <p className="text-green-200 text-xs sm:text-sm">
                       Date: {credential.vaccinationDate}
                     </p>
                   </div>
                 </div>
-                <motion.button
-                  className="text-red-400 hover:text-red-300 transition-colors"
-                  onClick={() => handleDelete(credential)}
-                  onKeyDown={(e) =>
-                    handleKeyDown(e, () => handleDelete(credential))
-                  }
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  aria-label={`Delete ${credential.vaccineType} credential`}
-                >
-                  <Trash2 className="w-5 h-5" aria-hidden="true" />
-                </motion.button>
+                <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto">
+                  {credentialActions.map(({ icon: Icon, label, color, handler }) => (
+                    <motion.button
+                      key={label}
+                      className={`${color} transition-colors p-2 -m-2 touch-manipulation`}
+                      onClick={handler(credential)}
+                      onKeyDown={(e) => handleKeyDown(e, handler(credential))}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      aria-label={`${label} ${credential.vaccineType} credential`}
+                    >
+                      <Icon className="w-5 h-5" aria-hidden="true" />
+                    </motion.button>
+                  ))}
+                </div>
               </motion.div>
             ))
           )}
@@ -265,6 +287,34 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
         onCancel={handleCancelDelete}
         onUndo={handleUndoDelete}
         deletionStatus={deletionStatus}
+      />
+
+      <CredentialDetailsModal
+        isOpen={isDetailsModalOpen}
+        credential={selectedCredential}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedCredential(null);
+        }}
+      />
+
+      <CredentialEditModal
+        isOpen={isEditModalOpen}
+        credential={selectedCredential}
+        onSave={(updatedCredential) => {
+          setCredentials((prev) =>
+            prev.map((c) => (c.id === updatedCredential.id ? updatedCredential : c))
+          );
+          setToast({
+            show: true,
+            title: 'Credential Updated',
+            description: 'Metadata has been successfully saved',
+          });
+        }}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedCredential(null);
+        }}
       />
     </div>
   );

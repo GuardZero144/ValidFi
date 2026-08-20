@@ -28,6 +28,11 @@ export class IdentityController {
     return this.identityService.findAll(req.user.walletAddress, pagination);
   }
 
+  @Get('revocations')
+  getRevocationList(@Query() pagination: PaginateIdentityDto) {
+    return this.identityService.getRevocationList(pagination);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.identityService.findOne(id);
@@ -41,13 +46,35 @@ export class IdentityController {
 
   @Patch(':id/revoke')
   @Audit(AuditOperation.REVOKED)
-  revoke(@Param('id') id: string) {
-    return this.identityService.revoke(id);
+  revoke(@Param('id') id: string, @Body('reason') reason?: string) {
+    return this.identityService.revoke(id, reason);
+  }
+
+  @Post('bulk-revoke')
+  @Audit(AuditOperation.REVOKED)
+  bulkRevoke(@Body('ids') ids: string[], @Body('reason') reason?: string) {
+    return this.identityService.bulkRevoke(ids, reason);
+  }
+
+  @Get(':id/revocation-status')
+  getRevocationStatus(@Param('id') id: string) {
+    return this.identityService.getRevocationStatus(id);
+  }
+
+  @Get(':id/fraud-detection')
+  detectFraud(@Param('id') id: string) {
+    return this.identityService.detectFraud(id);
   }
 
   @Delete(':id')
   @Audit(AuditOperation.DELETED)
   remove(@Param('id') id: string) {
     return this.identityService.remove(id);
+  }
+
+  @Get(':id/verify-integrity')
+  @Audit(AuditOperation.VERIFIED)
+  verifyIntegrity(@Param('id') id: string) {
+    return this.identityService.verifyIntegrity(id);
   }
 }

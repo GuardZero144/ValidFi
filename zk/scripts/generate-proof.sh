@@ -5,7 +5,7 @@
 
 set -e
 
-CIRCUIT_NAME=${1:-"MerkleTreeChecker"}
+CIRCUIT_NAME=${1:-"VaccinationProof"}
 INPUT_FILE=${2:-"input.json"}
 BUILD_DIR="build"
 
@@ -49,3 +49,5 @@ echo "  Proof: $BUILD_DIR/proof.json"
 echo "  Public signals: $BUILD_DIR/public.json"
 echo ""
 echo "Proof size: $(wc -c < $BUILD_DIR/proof.json) bytes"
+echo ""
+echo "To verify: bash scripts/verify-proof.sh $CIRCUIT_NAME"

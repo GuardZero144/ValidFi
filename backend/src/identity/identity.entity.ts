@@ -20,6 +20,9 @@ export class Identity {
   @Column({ default: false })
   revoked: boolean;
 
+  @Column({ nullable: true })
+  revocationReason: string;
+
   @Column({ type: 'json', nullable: true })
   metadata: Record<string, any>;
 
