@@ -58,6 +58,7 @@ pub struct VaccinationVerification;
 
 #[contractimpl]
 impl VaccinationVerification {
+    #[allow(clippy::too_many_arguments)]
     pub fn submit_credential(
         env: &Env,
         issuer: Address,
