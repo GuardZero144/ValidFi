@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Edit2, CheckCircle } from 'lucide-react';
+import { LoadingSpinner } from './loading/loading-spinner';
 
 interface Credential {
   id: string;
@@ -26,25 +27,35 @@ export function CredentialEditModal({
 }: CredentialEditModalProps) {
   const [vaccineType, setVaccineType] = useState('');
   const [vaccinationDate, setVaccinationDate] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (credential && isOpen) {
       setVaccineType(credential.vaccineType);
       setVaccinationDate(credential.vaccinationDate);
+      setIsSaving(false);
     }
   }, [credential, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (credential) {
-      onSave({
-        ...credential,
-        vaccineType,
-        vaccinationDate,
-      });
-      onClose();
-    }
-  };
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (credential && !isSaving) {
+        setIsSaving(true);
+        // Simulate async save
+        setTimeout(() => {
+          onSave({
+            ...credential,
+            vaccineType,
+            vaccinationDate,
+          });
+          setIsSaving(false);
+          onClose();
+        }, 800);
+      }
+    },
+    [credential, isSaving, onSave, onClose, vaccineType, vaccinationDate]
+  );
 
   if (!credential) return null;
 
@@ -90,7 +101,8 @@ export function CredentialEditModal({
                   type="text"
                   value={vaccineType}
                   onChange={(e) => setVaccineType(e.target.value)}
-                  className="w-full bg-white/10 border border-white/20 rounded p-3 sm:p-2 text-white outline-none focus:border-green-400 text-base sm:text-sm"
+                  disabled={isSaving}
+                  className="w-full bg-white/10 border border-white/20 rounded p-3 sm:p-2 text-white outline-none focus:border-green-400 text-base sm:text-sm disabled:opacity-50"
                   required
                 />
               </div>
@@ -100,7 +112,8 @@ export function CredentialEditModal({
                   type="text"
                   value={vaccinationDate}
                   onChange={(e) => setVaccinationDate(e.target.value)}
-                  className="w-full bg-white/10 border border-white/20 rounded p-3 sm:p-2 text-white outline-none focus:border-green-400 text-base sm:text-sm"
+                  disabled={isSaving}
+                  className="w-full bg-white/10 border border-white/20 rounded p-3 sm:p-2 text-white outline-none focus:border-green-400 text-base sm:text-sm disabled:opacity-50"
                   required
                 />
               </div>
@@ -109,16 +122,24 @@ export function CredentialEditModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-3 sm:py-2 bg-white/10 text-white rounded hover:bg-white/20 transition-colors touch-manipulation order-2 sm:order-1"
+                  disabled={isSaving}
+                  className="px-4 py-3 sm:py-2 bg-white/10 text-white rounded hover:bg-white/20 transition-colors touch-manipulation order-2 sm:order-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-3 sm:py-2 bg-green-500 text-white rounded hover:bg-green-600 active:bg-green-700 transition-colors flex items-center justify-center gap-2 touch-manipulation order-1 sm:order-2"
+                  disabled={isSaving}
+                  className="px-4 py-3 sm:py-2 bg-green-500 text-white rounded hover:bg-green-600 active:bg-green-700 transition-colors flex items-center justify-center gap-2 touch-manipulation order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
                 >
-                  <CheckCircle className="w-4 h-4" />
-                  Save Changes
+                  {isSaving ? (
+                    <LoadingSpinner size="sm" label="Saving..." />
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </div>
             </form>
