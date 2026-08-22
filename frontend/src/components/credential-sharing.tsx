@@ -17,6 +17,8 @@ interface SharedCredential {
   vaccineType: string;
   recipient: string;
   expiresAt: string;
+  sharedAt: string;
+  status: 'active' | 'revoked' | 'expired';
 }
 
 export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
@@ -67,6 +69,8 @@ export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
             vaccineType: 'COVID-19 Vaccination',
             recipient: 'GABCDEF123456...',
             expiresAt: new Date(Date.now() + 86400000).toISOString(),
+            sharedAt: new Date().toISOString(),
+            status: 'active',
           };
           setSharedCredentials((prev) => [...prev, newShare]);
           resolve();
@@ -79,7 +83,9 @@ export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
 
   const handleRevoke = useCallback(
     (id: string, vaccineType: string) => {
-      setSharedCredentials((prev) => prev.filter((c) => c.id !== id));
+      setSharedCredentials((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: 'revoked' as const } : c))
+      );
       setToast({
         show: true,
         title: 'Access Revoked',
@@ -89,6 +95,19 @@ export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
       setTimeout(() => setToast((t) => ({ ...t, show: false })), 3000);
     },
     [announceToScreenReader]
+  );
+
+  // Derive effective status: an entry is expired once its expiry has passed,
+  // unless it was explicitly revoked first.
+  const resolveStatus = useCallback((credential: SharedCredential): 'active' | 'revoked' | 'expired' => {
+    if (credential.status === 'revoked') return 'revoked';
+    if (new Date(credential.expiresAt).getTime() <= Date.now()) return 'expired';
+    return 'active';
+  }, []);
+
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'revoked' | 'expired'>('all');
+  const filteredCredentials = sharedCredentials.filter(
+    (c) => statusFilter === 'all' || resolveStatus(c) === statusFilter
   );
 
   const handleKeyDown = useCallback(
@@ -219,10 +238,36 @@ export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
 
       {/* Shared credentials list */}
       <div className="space-y-3 sm:space-y-4">
-        <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Shared Credentials</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <h3 className="text-base sm:text-lg font-semibold text-white">Shared Credentials</h3>
+          <div role="group" aria-label="Filter shared credentials by status" className="flex flex-wrap gap-2">
+            {(
+              [
+                { value: 'all', label: 'All' },
+                { value: 'active', label: 'Active' },
+                { value: 'revoked', label: 'Revoked' },
+                { value: 'expired', label: 'Expired' },
+              ] as const
+            ).map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatusFilter(value)}
+                aria-pressed={statusFilter === value}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors touch-manipulation ${
+                  statusFilter === value
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white/10 text-green-200 hover:bg-white/20'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div role="list" aria-label="Shared credentials">
           <AnimatePresence mode="popLayout">
-            {sharedCredentials.length === 0 ? (
+            {filteredCredentials.length === 0 ? (
               <motion.div
                 key="empty"
                 className="text-center py-6 sm:py-8 text-green-200"
@@ -232,10 +277,17 @@ export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
                 role="status"
               >
                 <Shield className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 opacity-50" aria-hidden="true" />
-                <p className="text-sm sm:text-base">No credentials shared yet</p>
+                <p className="text-sm sm:text-base">
+                  {sharedCredentials.length === 0
+                    ? 'No credentials shared yet'
+                    : `No ${statusFilter} credentials`}
+                </p>
               </motion.div>
             ) : (
-              sharedCredentials.map((share, index) => (
+              filteredCredentials.map((share, index) => {
+                const status = resolveStatus(share);
+                const statusLabel = status === 'expired' ? 'Expired' : status === 'revoked' ? 'Revoked' : 'Active';
+                return (
                 <motion.div
                   key={share.id}
                   className="bg-white/10 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
@@ -250,28 +302,50 @@ export function CredentialSharing({ walletAddress }: CredentialSharingProps) {
                   <div className="flex items-center gap-3 sm:gap-4">
                     <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 flex-shrink-0" aria-hidden="true" />
                     <div className="min-w-0">
-                      <p className="text-white font-medium text-sm sm:text-base">{share.vaccineType}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-white font-medium text-sm sm:text-base">{share.vaccineType}</p>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
+                            status === 'active'
+                              ? 'bg-green-500/20 text-green-300'
+                              : status === 'revoked'
+                                ? 'bg-red-500/20 text-red-300'
+                                : 'bg-yellow-500/20 text-yellow-300'
+                          }`}
+                          aria-label={`Status: ${statusLabel}`}
+                        >
+                          {statusLabel}
+                        </span>
+                      </div>
                       <p className="text-green-200 text-xs sm:text-sm truncate">Shared with: {share.recipient}</p>
                       <p className="text-green-200 text-xs sm:text-sm flex items-center gap-1">
                         <Clock className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden="true" />
                         Expires: {new Date(share.expiresAt).toLocaleString()}
                       </p>
+                      <p className="text-green-300 text-xs">Shared: {new Date(share.sharedAt).toLocaleString()}</p>
                     </div>
                   </div>
-                  <motion.button
-                    className="text-red-400 hover:text-red-300 transition-colors self-end sm:self-auto p-2 -m-2 touch-manipulation"
-                    onClick={() => handleRevoke(share.id, share.vaccineType)}
-                    onKeyDown={(e) =>
-                      handleKeyDown(e, () => handleRevoke(share.id, share.vaccineType))
-                    }
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    aria-label={`Revoke access for ${share.vaccineType}`}
-                  >
-                    <X className="w-5 h-5" aria-hidden="true" />
-                  </motion.button>
+                  {status === 'active' ? (
+                    <motion.button
+                      className="text-red-400 hover:text-red-300 transition-colors self-end sm:self-auto p-2 -m-2 touch-manipulation"
+                      onClick={() => handleRevoke(share.id, share.vaccineType)}
+                      onKeyDown={(e) =>
+                        handleKeyDown(e, () => handleRevoke(share.id, share.vaccineType))
+                      }
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      aria-label={`Revoke access for ${share.vaccineType}`}
+                    >
+                      <X className="w-5 h-5" aria-hidden="true" />
+                    </motion.button>
+                  ) : (
+                    <span className="text-green-300 text-xs self-end sm:self-auto px-2" aria-label={`${statusLabel} — access no longer valid`}>
+                      {statusLabel === 'Expired' ? 'Expired' : 'Revoked'}
+                    </span>
+                  )}
                 </motion.div>
-              ))
+                );
+              })
             )}
           </AnimatePresence>
         </div>
