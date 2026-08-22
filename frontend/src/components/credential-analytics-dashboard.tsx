@@ -1,3 +1,4 @@
+import { SkeletonAnalytics } from './loading/skeleton-analytics';
 import { useState, useEffect } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -98,11 +99,7 @@ export function CredentialAnalyticsDashboard() {
   }, []);
 
   if (loading || !data) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-green-200">Loading analytics...</div>
-      </div>
-    );
+    return <SkeletonAnalytics />;
   }
 
   const pieData = [
