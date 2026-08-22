@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { CredentialSharing } from '../src/components/credential-sharing';
 import { AccessibilityProvider } from '../src/contexts/AccessibilityContext';
 
@@ -42,8 +42,42 @@ describe('CredentialSharing', () => {
     expect(screen.getByText('1 month')).toBeInTheDocument();
   });
 
-  it('renders shared credentials section heading', () => {
+  it('renders shared credentials section heading and status filters', () => {
     renderWithProviders(<CredentialSharing walletAddress={walletAddress} />);
     expect(screen.getByText('Shared Credentials')).toBeInTheDocument();
+    expect(screen.getByText('All')).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getByText('Revoked')).toBeInTheDocument();
+    expect(screen.getByText('Expired')).toBeInTheDocument();
+  });
+
+  it('shares a credential and displays it with active status', async () => {
+    jest.useFakeTimers();
+    renderWithProviders(<CredentialSharing walletAddress={walletAddress} />);
+
+    // Make the simulated network call deterministic (avoid the 10% random error)
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+
+    const shareButton = screen
+      .getAllByText('Share Vaccination Proof')
+      .find((el) => el.tagName === 'BUTTON') as HTMLElement;
+
+    // Wait for the share flow to complete inside act
+    await act(async () => {
+      fireEvent.click(shareButton);
+      // Advance all setTimeout (stages + 2400ms final resolution)
+      jest.runAllTimers();
+    });
+
+    // Flush remaining microtasks
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText(/COVID-19 Vaccination/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Status: Active/)).toBeInTheDocument();
+
+    randomSpy.mockRestore();
+    jest.useRealTimers();
   });
 });
