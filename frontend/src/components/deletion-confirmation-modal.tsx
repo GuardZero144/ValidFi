@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Shield, Clock, CheckCircle, XCircle, Undo2 } from 'lucide-react';
+import { AlertTriangle, Shield, Clock, CheckCircle, XCircle, Undo2, Loader2 } from 'lucide-react';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
+import { AnimatedProgress } from './animations';
 
 interface Credential {
   id: string;
@@ -31,6 +32,7 @@ export function DeletionConfirmationModal({
 }: DeletionConfirmationModalProps) {
   const [confirmationText, setConfirmationText] = useState('');
   const [undoCountdown, setUndoCountdown] = useState(10);
+  const [deleteProgress, setDeleteProgress] = useState(0);
   const { announceToScreenReader } = useAccessibility();
 
   const isConfirmEnabled = confirmationText === 'DELETE';
@@ -39,9 +41,29 @@ export function DeletionConfirmationModal({
     if (isOpen) {
       setConfirmationText('');
       setUndoCountdown(10);
+      setDeleteProgress(0);
       announceToScreenReader('Deletion confirmation dialog opened');
     }
   }, [isOpen, announceToScreenReader]);
+
+  // Simulate deletion progress
+  useEffect(() => {
+    if (deletionStatus === 'deleting') {
+      const stages = [
+        { progress: 25, delay: 300 },
+        { progress: 50, delay: 600 },
+        { progress: 75, delay: 900 },
+        { progress: 100, delay: 1200 },
+      ];
+
+      const timers = stages.map(({ progress, delay }) =>
+        setTimeout(() => setDeleteProgress(progress), delay)
+      );
+
+      return () => timers.forEach(clearTimeout);
+    }
+    setDeleteProgress(0);
+  }, [deletionStatus]);
 
   useEffect(() => {
     if (deletionStatus === 'undoable' && undoCountdown > 0) {
@@ -169,19 +191,34 @@ export function DeletionConfirmationModal({
 
             {/* Deletion status */}
             {deletionStatus === 'deleting' && (
-              <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 animate-spin" />
+              <motion.div
+                className="mb-3 sm:mb-4 p-3 sm:p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                  </motion.div>
                   <div>
                     <p className="text-white font-medium text-sm sm:text-base">Deleting credential...</p>
                     <p className="text-xs sm:text-sm text-gray-400">Please wait while we process your request</p>
                   </div>
                 </div>
-              </div>
+                <AnimatedProgress progress={deleteProgress} label="Removing from IPFS and blockchain" />
+              </motion.div>
             )}
 
             {deletionStatus === 'deleted' && (
-              <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <motion.div
+                className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-500/10 border border-red-500/30 rounded-lg"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
                   <div>
@@ -189,19 +226,24 @@ export function DeletionConfirmationModal({
                     <p className="text-xs sm:text-sm text-gray-400">The credential has been permanently removed</p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {deletionStatus === 'failed' && (
-              <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+              <motion.div
+                className="mb-3 sm:mb-4 p-3 sm:p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                role="alert"
+              >
                 <div className="flex items-center gap-3">
                   <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
                   <div>
                     <p className="text-white font-medium text-sm sm:text-base">Deletion failed</p>
-                    <p className="text-xs sm:text-sm text-gray-400">An error occurred while deleting the credential</p>
+                    <p className="text-xs sm:text-sm text-gray-400">An error occurred while deleting the credential. Please try again.</p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {deletionStatus === 'undoable' && (
@@ -254,7 +296,7 @@ export function DeletionConfirmationModal({
                   >
                     Cancel
                   </button>
-                  <button
+                  <motion.button
                     onClick={onConfirm}
                     disabled={!isConfirmEnabled}
                     className={`px-4 py-3 sm:py-2 rounded-lg transition-colors flex items-center justify-center gap-2 touch-manipulation order-1 sm:order-none ${
@@ -262,11 +304,26 @@ export function DeletionConfirmationModal({
                         ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white'
                         : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                     }`}
+                    whileHover={isConfirmEnabled ? { scale: 1.02 } : {}}
+                    whileTap={isConfirmEnabled ? { scale: 0.98 } : {}}
                   >
                     <XCircle className="w-4 h-4" />
                     Delete Permanently
-                  </button>
+                  </motion.button>
                 </>
+              ) : deletionStatus === 'deleting' ? (
+                <button
+                  disabled
+                  className="px-4 py-3 sm:py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed flex items-center justify-center gap-2 touch-manipulation"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Loader2 className="w-4 h-4" />
+                  </motion.div>
+                  Deleting...
+                </button>
               ) : (
                 <button
                   onClick={onCancel}
