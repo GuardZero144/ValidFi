@@ -84,7 +84,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-4">
               <NotificationBell />
-              <WalletConnect onConnect={setWalletAddress} />
+              <WalletConnect onConnect={setWalletAddress} onDisconnect={() => setWalletAddress(null)} />
             </div>
           </div>
         </header>
