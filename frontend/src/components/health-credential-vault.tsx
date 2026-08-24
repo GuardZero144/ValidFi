@@ -7,6 +7,7 @@ import { AnimatedProgress, SuccessOverlay, SuccessToast } from './animations';
 import { DeletionConfirmationModal } from './deletion-confirmation-modal';
 import { CredentialDetailsModal } from './credential-details-modal';
 import { CredentialEditModal } from './credential-edit-modal';
+import { SkeletonCard } from './loading/skeleton-card';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 
 interface HealthCredentialVaultProps {
@@ -22,6 +23,7 @@ interface Credential {
 
 export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultProps) {
   const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; title: string; description?: string }>({
@@ -38,6 +40,14 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
   const [deletionStatus, setDeletionStatus] = useState<'idle' | 'deleting' | 'deleted' | 'failed' | 'undoable'>('idle');
   const { announceToScreenReader } = useAccessibility();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Simulate initial loading of credentials from storage
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const simulateUpload = useCallback((fileName: string) => {
     setUploadProgress(0);
@@ -210,7 +220,9 @@ export function HealthCredentialVault({ walletAddress }: HealthCredentialVaultPr
       {/* Credentials list */}
       <div className="space-y-3 sm:space-y-4" role="list" aria-label="Uploaded credentials">
         <AnimatePresence mode="popLayout">
-          {credentials.length === 0 ? (
+          {initialLoading ? (
+            <SkeletonCard count={3} label="Loading credentials" />
+          ) : credentials.length === 0 ? (
             <motion.div
               key="empty"
               className="text-center py-6 sm:py-8 text-green-200"
