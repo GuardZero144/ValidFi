@@ -11,6 +11,11 @@ import { CredentialExport } from '../credential-export/credential-export.entity'
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 
+import { CredentialSearchAnalytics } from './credential-search-analytics.entity';
+import { CredentialSearchAnalyticsService } from './credential-search-analytics.service';
+import { CredentialSearchService } from './credential-search.service';
+import { CredentialSearchController } from './credential-search.controller';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -18,20 +23,24 @@ import { AuthModule } from '../auth/auth.module';
       AccessPermission,
       CredentialVersion,
       CredentialExport,
+      CredentialSearchAnalytics,
     ]),
     AuditModule,
     AuthModule,
   ],
-  controllers: [SecureDeletionController],
+  controllers: [SecureDeletionController, CredentialSearchController],
   providers: [
     CredentialMigrationService,
     CredentialDeduplicationService,
     SecureDeletionService,
+    CredentialSearchAnalyticsService,
+    CredentialSearchService,
   ],
   exports: [
     CredentialMigrationService,
     CredentialDeduplicationService,
     SecureDeletionService,
+    CredentialSearchService,
   ],
 })
 export class CredentialsModule {}
