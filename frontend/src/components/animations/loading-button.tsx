@@ -1,14 +1,15 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { forwardRef } from 'react';
 
-interface LoadingButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface LoadingButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
   isLoading?: boolean;
   loadingText?: string;
   variant?: 'primary' | 'secondary' | 'danger';
   size?: 'sm' | 'md' | 'lg';
+  children?: React.ReactNode;
 }
 
 const variantClasses = {

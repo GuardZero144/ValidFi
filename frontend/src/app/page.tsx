@@ -21,7 +21,7 @@ const TABS = [
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('vault');
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>('GDEMO1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ');
   const { announceToScreenReader } = useAccessibility();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
