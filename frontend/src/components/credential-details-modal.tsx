@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Shield, Calendar } from 'lucide-react';
+import { Skeleton } from './animations';
 
 interface Credential {
   id: string;
@@ -16,11 +18,48 @@ interface CredentialDetailsModalProps {
   onClose: () => void;
 }
 
+function CredentialDetailsSkeleton() {
+  return (
+    <div className="space-y-3 sm:space-y-4" role="status" aria-label="Loading credential details">
+      <div>
+        <Skeleton width={80} height={12} className="mb-2" />
+        <Skeleton width={180} height={24} />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div>
+          <Skeleton width={50} height={12} className="mb-2" />
+          <Skeleton width={70} height={16} />
+        </div>
+        <div>
+          <Skeleton width={40} height={12} className="mb-2" />
+          <Skeleton width={100} height={16} />
+        </div>
+      </div>
+      <div>
+        <Skeleton width={90} height={12} className="mb-2" />
+        <Skeleton variant="rectangular" width="100%" height={40} />
+      </div>
+    </div>
+  );
+}
+
 export function CredentialDetailsModal({
   isOpen,
   credential,
   onClose,
 }: CredentialDetailsModalProps) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (isOpen && credential) {
+      setIsLoading(true);
+      // Simulate loading delay for demonstration
+      const timer = setTimeout(() => setIsLoading(false), 800);
+      return () => clearTimeout(timer);
+    }
+    setIsLoading(true);
+  }, [isOpen, credential]);
+
   if (!credential) return null;
 
   return (
@@ -58,34 +97,43 @@ export function CredentialDetailsModal({
               <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
               <h3 className="text-lg sm:text-xl font-bold text-white">Credential Details</h3>
             </div>
-            
-            <div className="space-y-3 sm:space-y-4">
-              <div>
-                <label className="text-xs sm:text-sm text-gray-400">Vaccine Type</label>
-                <div className="text-white font-medium text-base sm:text-lg">{credential.vaccineType}</div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+
+            {isLoading ? (
+              <CredentialDetailsSkeleton />
+            ) : (
+              <motion.div
+                className="space-y-3 sm:space-y-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
                 <div>
-                  <label className="text-xs sm:text-sm text-gray-400">Status</label>
-                  <div className={`font-medium ${credential.verificationStatus ? 'text-green-400' : 'text-yellow-400'}`}>
-                    {credential.verificationStatus ? 'Verified' : 'Pending'}
+                  <label className="text-xs sm:text-sm text-gray-400">Vaccine Type</label>
+                  <div className="text-white font-medium text-base sm:text-lg">{credential.vaccineType}</div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="text-xs sm:text-sm text-gray-400">Status</label>
+                    <div className={`font-medium ${credential.verificationStatus ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {credential.verificationStatus ? 'Verified' : 'Pending'}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs sm:text-sm text-gray-400">Date</label>
+                    <div className="text-white flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      {credential.vaccinationDate}
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs sm:text-sm text-gray-400">Date</label>
-                  <div className="text-white flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    {credential.vaccinationDate}
+                  <label className="text-xs sm:text-sm text-gray-400">Credential ID</label>
+                  <div className="text-gray-300 font-mono text-xs sm:text-sm break-all bg-white/5 p-2 rounded">
+                    {credential.id}
                   </div>
                 </div>
-              </div>
-              <div>
-                <label className="text-xs sm:text-sm text-gray-400">Credential ID</label>
-                <div className="text-gray-300 font-mono text-xs sm:text-sm break-all bg-white/5 p-2 rounded">
-                  {credential.id}
-                </div>
-              </div>
-            </div>
+              </motion.div>
+            )}
           </motion.div>
         </motion.div>
       )}
